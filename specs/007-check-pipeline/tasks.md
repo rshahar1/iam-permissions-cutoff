@@ -7,4 +7,4 @@
 - [x] T005 Point integration tests at `iam_audit.pipeline.collect_access_advisor`
 - [x] T006 Add `tests/unit/test_pipeline.py`
 - [x] T007 Run ruff, mypy (strict), pytest and the emulator smoke test
-- [ ] T008 Verify CI passes on the pull request
+- [x] T008 Verify CI passes on the pull request — all 5 checks green on PR #4, 2026-11-20
