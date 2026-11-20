@@ -13,6 +13,8 @@ class FindingCategory(enum.Enum):
     DORMANCY = "dormancy"
     PERMISSION = "permission"
     UNUSED_PERMISSION = "unused_permission"
+    PRIVILEGE_ESCALATION = "privilege_escalation"
+    CREDENTIAL = "credential"
     TRUST_POLICY = "trust_policy"
 
     @property
@@ -25,6 +27,8 @@ _CATEGORY_DISPLAY_NAMES: dict[FindingCategory, str] = {
     FindingCategory.DORMANCY: "Dormancy Findings",
     FindingCategory.PERMISSION: "Permission Findings",
     FindingCategory.UNUSED_PERMISSION: "Unused Permission Findings",
+    FindingCategory.PRIVILEGE_ESCALATION: "Privilege Escalation Findings",
+    FindingCategory.CREDENTIAL: "Credential Findings",
     FindingCategory.TRUST_POLICY: "Trust Policy Findings",
 }
 

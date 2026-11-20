@@ -48,7 +48,7 @@ def test_dormancy_subcommand_exit_code_1() -> None:
     with (
         patch("iam_audit.cli.get_account_id", return_value="123456789012"),
         pytest.raises(SystemExit) as exc_info,
-        patch("sys.argv", ["iam-audit", "dormancy", "--days", "1"]),
+        patch("sys.argv", ["iam-audit", "dormancy", "--days", "0"]),
     ):
         main()
     assert exc_info.value.code == 1
@@ -61,7 +61,7 @@ def test_dormancy_text_output_format(capsys: pytest.CaptureFixture[str]) -> None
     with (
         patch("iam_audit.cli.get_account_id", return_value="123456789012"),
         pytest.raises(SystemExit),
-        patch("sys.argv", ["iam-audit", "dormancy", "--days", "1"]),
+        patch("sys.argv", ["iam-audit", "dormancy", "--days", "0"]),
     ):
         main()
     captured = capsys.readouterr()
@@ -107,7 +107,7 @@ def test_filter_by_path_prefix(capsys: pytest.CaptureFixture[str]) -> None:
     with (
         patch("iam_audit.cli.get_account_id", return_value="123456789012"),
         pytest.raises(SystemExit),
-        patch("sys.argv", ["iam-audit", "dormancy", "--days", "1", "--path-prefix", "/team-alpha/"]),
+        patch("sys.argv", ["iam-audit", "dormancy", "--days", "0", "--path-prefix", "/team-alpha/"]),
     ):
         main()
     captured = capsys.readouterr()
@@ -148,7 +148,7 @@ def test_dormancy_html_output_writes_file(tmp_path: Path) -> None:
         patch("iam_audit.cli.get_account_id", return_value="123456789012"),
         pytest.raises(SystemExit) as exc_info,
         patch("sys.argv", [
-            "iam-audit", "dormancy", "--days", "1",
+            "iam-audit", "dormancy", "--days", "0",
             "--format", "html", "--output", str(out_file),
         ]),
     ):

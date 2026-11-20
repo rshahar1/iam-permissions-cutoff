@@ -21,6 +21,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from iam_audit.analyzers import credentials, privesc
 from iam_audit.analyzers.dormancy import analyze_dormancy
 from iam_audit.analyzers.permissions import analyze_permissions
 from iam_audit.analyzers.trust import add_trust_arguments
@@ -71,7 +72,7 @@ class Subcommand:
 
 
 def _run_dormancy(ctx: AuditContext) -> list[Finding]:
-    return analyze_dormancy(ctx.principals, threshold_days=ctx.options.days)
+    return analyze_dormancy(ctx.principals, threshold_days=ctx.options.days, now=ctx.now)
 
 
 def _run_permissions(ctx: AuditContext) -> list[Finding]:
@@ -98,6 +99,8 @@ CHECKS: dict[str, Check] = {
         Check("dormancy", _run_dormancy),
         Check("permissions", _run_permissions, needs_policies=True),
         Check("unused", _run_unused, needs_policies=True),
+        Check("privesc", privesc.run, needs_policies=True),
+        Check("credentials", credentials.run, add_arguments=credentials.add_arguments),
         Check("trust", run_trust, add_arguments=add_trust_arguments),
     )
 }
@@ -120,6 +123,15 @@ examples:
   iam-audit permissions --include-aws-managed  Also scan service-linked and SSO roles
   iam-audit permissions --concurrency 20     Increase API parallelism
   iam-audit permissions --format json > out.json
+"""
+
+_CREDENTIALS_EPILOG = """\
+examples:
+  iam-audit credentials                      Root, MFA, access key and password hygiene
+  iam-audit credentials --key-max-age 60     Flag access keys not rotated in 60 days
+  iam-audit credentials --days 30            Recent-use / never-used window of 30 days
+  iam-audit credentials --name "ci-*"        Only matching users (root row is skipped)
+  iam-audit credentials --format json        JSON output to stdout
 """
 
 _REPORT_EPILOG = """\
@@ -146,7 +158,7 @@ SUBCOMMANDS: tuple[Subcommand, ...] = (
         description="Analyze IAM policies for wildcard actions, broad resources, and\n"
         "unused permissions via AWS Access Advisor. Includes Deny-statement awareness.",
         epilog=_PERMISSIONS_EPILOG,
-        checks=("permissions", "unused", "trust"),
+        checks=("permissions", "unused", "privesc", "trust"),
     ),
     Subcommand(
         name="report",
@@ -154,7 +166,15 @@ SUBCOMMANDS: tuple[Subcommand, ...] = (
         description="Run every check and produce a combined report.\n"
         "Supports text, JSON, and HTML output formats.",
         epilog=_REPORT_EPILOG,
-        checks=("dormancy", "permissions", "unused", "trust"),
+        checks=("dormancy", "permissions", "unused", "privesc", "credentials", "trust"),
+    ),
+    Subcommand(
+        name="credentials",
+        help="Audit credential hygiene: root account, MFA, access keys and passwords",
+        description="Analyze the IAM credential report for an active or MFA-less root account,\n"
+        "console users without MFA, stale or unused access keys and unused passwords.",
+        epilog=_CREDENTIALS_EPILOG,
+        checks=("credentials",),
     ),
 )
 

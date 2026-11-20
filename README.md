@@ -4,7 +4,7 @@ A CLI tool to audit AWS IAM roles and users for over-provisioning. It identifies
 
 ## Features
 
-- **Dormancy detection** — flags roles and users with no activity beyond a configurable threshold (default: 90 days), including entities that have never been used
+- **Dormancy detection** — flags roles and users with no activity beyond a configurable threshold (default: 90 days), including entities that have never been used (new principals get a grace period equal to the threshold, measured from creation)
 - **Permission analysis** — detects wildcard actions (`*`), wildcard resources (`*`), and broad service-level wildcards (e.g., `s3:*`) across inline, managed, and group policies. Notes the presence of Deny statements that may restrict effective permissions
 - **Unused permission analysis** — uses AWS Access Advisor (action-level granularity) to identify granted permissions that have never been exercised, with wildcard expansion via a bundled IAM actions map
 - **Consolidated reporting** — combines all findings into a single report in text (table), JSON, or **HTML** format
@@ -58,6 +58,8 @@ iam:GetServiceLastAccessedDetails
 sts:GetCallerIdentity
 ```
 
+The credential checks (`credentials` subcommand and `report`) additionally need `iam:GenerateCredentialReport` and `iam:GetCredentialReport`. If they are denied, the audit continues and records a data gap instead of credential findings.
+
 The tool is entirely read-only and requires no write permissions.
 
 ## Usage
@@ -72,7 +74,8 @@ iam-audit <subcommand> [options]
 |---------------|--------------------------------------------------------------------|
 | `dormancy`    | Identify principals with no recent activity                        |
 | `permissions` | Detect overly permissive policies and unused permission grants     |
-| `report`      | Generate a consolidated audit report (dormancy + permissions)      |
+| `credentials` | Audit root, MFA, access key and password hygiene                   |
+| `report`      | Generate a consolidated audit report (all checks)                  |
 
 ### Options
 
@@ -86,6 +89,7 @@ iam-audit <subcommand> [options]
 | `--format text\|json\|html` | `text` | Output format                                          |
 | `--output PATH`         | —       | Write output to file instead of stdout (required for HTML) |
 | `--concurrency N`       | `10`    | Max concurrent Access Advisor API requests                 |
+| `--key-max-age N`       | `90`    | Flag active access keys not rotated in N days (credential checks) |
 | `--trusted-accounts IDS` | —      | Comma-separated 12-digit account IDs whose role trust is expected (trust checks); repeatable |
 | `--version`             |         | Show version and exit                                      |
 
@@ -197,6 +201,61 @@ Self-contained static HTML file with:
 | `1`  | Audit complete — findings present                               |
 | `2`  | Tool error (credentials, permissions, invalid arguments)        |
 
+### Privilege-escalation checks
+
+The `permissions` and `report` subcommands also flag principals whose effective policies (managed, inline and group) let them escalate their own privileges. A rule fires only when **all** of its required actions are granted by an `Allow` statement that applies to all resources (`"*"` in `Resource`, or any `NotResource`), through `Action` patterns (wildcards included) or `NotAction`. An unconditional `Deny` listing `"*"` as a resource suppresses the matching actions. Principals with full admin access are skipped because they are already reported as `CRITICAL` permission findings. Findings use the category `privilege_escalation`.
+
+| Rule | Severity | Required actions |
+|------|----------|------------------|
+| `PE-001` | CRITICAL | `iam:CreatePolicyVersion` |
+| `PE-002` | HIGH | `iam:SetDefaultPolicyVersion` |
+| `PE-003` | CRITICAL | `iam:AttachUserPolicy` |
+| `PE-004` | CRITICAL | `iam:AttachGroupPolicy` |
+| `PE-005` | CRITICAL | `iam:AttachRolePolicy` |
+| `PE-006` | CRITICAL | `iam:PutUserPolicy` |
+| `PE-007` | CRITICAL | `iam:PutGroupPolicy` |
+| `PE-008` | CRITICAL | `iam:PutRolePolicy` |
+| `PE-009` | HIGH | `iam:AddUserToGroup` |
+| `PE-010` | CRITICAL | `iam:UpdateAssumeRolePolicy` |
+| `PE-011` | HIGH | `iam:CreateAccessKey` |
+| `PE-012` | HIGH | `iam:CreateLoginProfile` |
+| `PE-013` | HIGH | `iam:UpdateLoginProfile` |
+| `PE-014` | HIGH | `iam:PassRole` + `ec2:RunInstances` |
+| `PE-015` | HIGH | `iam:PassRole` + `lambda:CreateFunction` |
+| `PE-016` | HIGH | `lambda:UpdateFunctionCode` |
+| `PE-017` | HIGH | `iam:PassRole` + `cloudformation:CreateStack` |
+| `PE-018` | HIGH | `iam:PassRole` + `codebuild:CreateProject` |
+| `PE-019` | HIGH | `iam:PassRole` + `ecs:RegisterTaskDefinition` + `ecs:RunTask` |
+| `PE-020` | HIGH | `iam:PassRole` + `glue:CreateDevEndpoint` |
+| `PE-021` | HIGH | `glue:UpdateDevEndpoint` |
+| `PE-022` | HIGH | `ssm:SendCommand` |
+| `PE-023` | HIGH | `ssm:StartSession` |
+| `PE-024` | MEDIUM | `sts:AssumeRole` |
+
+**Limitation:** only grants on all resources are evaluated. Grants scoped to specific resources (for example `iam:PassRole` on one role ARN) are intentionally ignored to avoid noise, and permission boundaries, SCPs and conditions on `Allow` statements are not evaluated.
+
+### Credential checks
+
+The `credentials` subcommand (also part of `report`) reads the IAM credential report and emits `credential` findings. It needs `iam:GenerateCredentialReport` and `iam:GetCredentialReport`. The report covers users that pass your filters; the root account is included only when no `--path-prefix`, `--name` or `--tag` filter is set.
+
+| Rule       | Severity | Condition |
+|------------|----------|-----------|
+| `CRED-001` | CRITICAL | Root account has an active access key |
+| `CRED-002` | CRITICAL | Root account has no MFA device |
+| `CRED-003` | MEDIUM   | Root password used within the last `--days` days |
+| `CRED-004` | HIGH     | User has a console password but no MFA |
+| `CRED-005` | MEDIUM   | Active access key not rotated within `--key-max-age` days (default 90) |
+| `CRED-006` | MEDIUM   | Active access key never used and older than `--days` days |
+| `CRED-007` | LOW      | User has two active access keys |
+| `CRED-008` | MEDIUM   | Console password never used and user older than `--days` days |
+
+Per-key rules produce one finding per key (`key_slot` 1 or 2 in the metadata).
+
+```bash
+iam-audit credentials
+iam-audit credentials --key-max-age 60
+```
+
 ### Trust policy checks
 
 The `permissions` and `report` subcommands also inspect each role's trust policy (`AssumeRolePolicyDocument`, already returned by `ListRoles`, so no extra API calls). Only `Allow` statements that grant `sts:AssumeRole`, `sts:AssumeRoleWithWebIdentity`, `sts:AssumeRoleWithSAML` (or `sts:*` / `*`) are examined, and service-linked and `/aws-reserved/` roles are skipped. One finding is emitted per statement per rule (category `trust_policy`).
@@ -224,7 +283,7 @@ iam-audit permissions --trusted-accounts 111122223333,444455556666
 | Severity   | Criteria                                                                        |
 |------------|---------------------------------------------------------------------------------|
 | `CRITICAL` | All actions (`*` anywhere in `Action`) on all resources (`*` anywhere in `Resource`, or any `NotResource`) |
-| `HIGH`     | All actions on specific resources, full-service wildcard (e.g., `s3:*`), `Allow` + `NotAction` on all resources, more than 5 actions on all resources, principal never used or dormant > 2× threshold, or unused IAM/KMS/STS/Organizations/Secrets Manager permissions |
+| `HIGH`     | All actions on specific resources, full-service wildcard (e.g., `s3:*`), `Allow` + `NotAction` on all resources, more than 5 actions on all resources, principal dormant, or never used since creation, for > 2× threshold, or unused IAM/KMS/STS/Organizations/Secrets Manager permissions |
 | `MEDIUM`   | 2–5 specific actions on all resources, partial wildcards (e.g., `s3:Get*`), `Allow` + `NotAction` on specific resources, or most unused service permissions |
 | `LOW`      | Zero-policy entities, or one or two unused actions in a non-sensitive service |
 
@@ -262,7 +321,7 @@ mypy src
 python scripts/emulator_smoke.py [--keep-reports DIR]
 ```
 
-Starts a local [moto](https://github.com/getmoto/moto) IAM emulator, seeds one principal per known scenario, runs the real `iam-audit` CLI against it (default and `--include-aws-managed`) and fails (exit 1) if the findings differ from the expectations table in the script. It needs no AWS account or credentials and never contacts AWS: the environment is scrubbed of all `AWS_*` variables and pinned to the local emulator. Limits: moto does not emulate Access Advisor, so unused-permission checks are not covered, and freshly created principals show "never used" dormancy findings, which is expected.
+Starts a local [moto](https://github.com/getmoto/moto) IAM emulator, seeds one principal per known scenario, runs the real `iam-audit` CLI against it (default and `--include-aws-managed`) and fails (exit 1) if the findings differ from the expectations table in the script. It needs no AWS account or credentials and never contacts AWS: the environment is scrubbed of all `AWS_*` variables and pinned to the local emulator. Limits: moto does not emulate Access Advisor, so unused-permission checks are not covered, and freshly created principals must produce no dormancy findings (grace period), which the script asserts.
 
 ### Security audit
 
@@ -284,11 +343,13 @@ src/iam_audit/
 ├── collectors/
 │   ├── roles.py           # IAM role enumeration (paginated, get_role for accurate RoleLastUsed)
 │   ├── users.py           # IAM user enumeration (paginated, access key last used)
+│   ├── credential_report.py  # IAM credential report generation and CSV parsing
 │   ├── policies.py        # Policy document collection per principal (inline/managed/group)
 │   └── access_advisor.py  # Concurrent Access Advisor collection (ThreadPoolExecutor)
 ├── analyzers/
 │   ├── dormancy.py        # Last-activity threshold analysis
 │   ├── permissions.py     # Wildcard/broad policy detection with Deny awareness
+│   ├── credentials.py     # Root, MFA, access key and password hygiene rules
 │   └── unused.py          # Unused permission detection via Access Advisor + wildcard expansion
 ├── reporters/
 │   ├── text.py            # Human-readable table output
