@@ -9,4 +9,4 @@
 - [x] T007 Update README (credential checks, subcommand, option, IAM permissions)
 - [x] T008 Add `contracts/json-schema-delta.md`
 - [x] T009 Run ruff, mypy (strict), pytest and the emulator smoke test
-- [ ] T010 Verify CI passes on the pull request
+- [x] T010 Verify CI passes on the pull request — all 5 checks green on PR #7 (b853406, merged with 008+010), 2026-11-20
