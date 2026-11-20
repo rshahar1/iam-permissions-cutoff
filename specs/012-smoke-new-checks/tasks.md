@@ -20,4 +20,4 @@
 
 - [x] T006 [P] Update README "Local emulator smoke test" subsection
 - [x] T007 Run the script (exit 0), prove failure with a mutated rule id (exit 1), ruff, mypy, pytest
-- [ ] T008 Verify CI passes on the pull request
+- [x] T008 Verify CI passes on the pull request — all 5 checks green on PR #9 (ad392f1), 2026-11-20
