@@ -107,7 +107,7 @@ Adding a new check (documented in the `pipeline.py` module docstring; reporters 
 - Read-only: never add a write/mutating IAM call; update the "Required AWS Permissions" list in `README.md` whenever a
   new read call is added.
 - Never commit credentials, tokens, real account IDs or real principal names. Local output (`audit.json`, `/reports/`)
-  is gitignored for that reason; `.env*` and `.claude/` are ignored too. Use the placeholder account `123456789012` in
+  is gitignored for that reason; `.env*`, `.claude/worktrees/` and `.claude/settings.local.json` are ignored too. Use the placeholder account `123456789012` in
   tests, examples and docs. Check staged changes for secrets before every commit.
 - Dependencies are pinned to ranges in `requirements*.txt` / `pyproject.toml`; `pip-audit --strict` gates CI. Any new
   dependency needs justification (license, maintenance, vulnerabilities); the runtime stays boto3 + stdlib.
@@ -119,6 +119,9 @@ Adding a new check (documented in the `pipeline.py` module docstring; reporters 
   `plan.md` (including a Constitution Check table, one row per principle I-V) and `tasks.md`; optional `contracts/`.
 - Flow: `/speckit-specify` -> `/speckit-clarify` -> `/speckit-plan` -> `/speckit-tasks` -> `/speckit-analyze` ->
   `/speckit-implement`. Keep spec status, plan and task checkboxes in sync with what was actually built.
+- Those commands are project skills in `.claude/skills/speckit-*/SKILL.md` (also `/speckit-constitution`,
+  `/speckit-checklist`, `/speckit-taskstoissues`). They are ported from spec-kit's command prompts; keep them in step
+  with `.specify/` scripts and templates when upgrading spec-kit.
 - Helpers in `.specify/scripts/bash/`: `create-new-feature.sh [--json] [--short-name <name>] [--number N] "<description>"`
   (creates the branch and spec directory), `check-prerequisites.sh [--json] [--require-tasks] [--include-tasks]
   [--paths-only]`, `setup-plan.sh`, and `update-agent-context.sh [agent_type]` (maintains the last two sections of
