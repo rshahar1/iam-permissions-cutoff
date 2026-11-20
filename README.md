@@ -196,6 +196,39 @@ Self-contained static HTML file with:
 | `1`  | Audit complete — findings present                               |
 | `2`  | Tool error (credentials, permissions, invalid arguments)        |
 
+### Privilege-escalation checks
+
+The `permissions` and `report` subcommands also flag principals whose effective policies (managed, inline and group) let them escalate their own privileges. A rule fires only when **all** of its required actions are granted by an `Allow` statement that applies to all resources (`"*"` in `Resource`, or any `NotResource`), through `Action` patterns (wildcards included) or `NotAction`. An unconditional `Deny` listing `"*"` as a resource suppresses the matching actions. Principals with full admin access are skipped because they are already reported as `CRITICAL` permission findings. Findings use the category `privilege_escalation`.
+
+| Rule | Severity | Required actions |
+|------|----------|------------------|
+| `PE-001` | CRITICAL | `iam:CreatePolicyVersion` |
+| `PE-002` | HIGH | `iam:SetDefaultPolicyVersion` |
+| `PE-003` | CRITICAL | `iam:AttachUserPolicy` |
+| `PE-004` | CRITICAL | `iam:AttachGroupPolicy` |
+| `PE-005` | CRITICAL | `iam:AttachRolePolicy` |
+| `PE-006` | CRITICAL | `iam:PutUserPolicy` |
+| `PE-007` | CRITICAL | `iam:PutGroupPolicy` |
+| `PE-008` | CRITICAL | `iam:PutRolePolicy` |
+| `PE-009` | HIGH | `iam:AddUserToGroup` |
+| `PE-010` | CRITICAL | `iam:UpdateAssumeRolePolicy` |
+| `PE-011` | HIGH | `iam:CreateAccessKey` |
+| `PE-012` | HIGH | `iam:CreateLoginProfile` |
+| `PE-013` | HIGH | `iam:UpdateLoginProfile` |
+| `PE-014` | HIGH | `iam:PassRole` + `ec2:RunInstances` |
+| `PE-015` | HIGH | `iam:PassRole` + `lambda:CreateFunction` |
+| `PE-016` | HIGH | `lambda:UpdateFunctionCode` |
+| `PE-017` | HIGH | `iam:PassRole` + `cloudformation:CreateStack` |
+| `PE-018` | HIGH | `iam:PassRole` + `codebuild:CreateProject` |
+| `PE-019` | HIGH | `iam:PassRole` + `ecs:RegisterTaskDefinition` + `ecs:RunTask` |
+| `PE-020` | HIGH | `iam:PassRole` + `glue:CreateDevEndpoint` |
+| `PE-021` | HIGH | `glue:UpdateDevEndpoint` |
+| `PE-022` | HIGH | `ssm:SendCommand` |
+| `PE-023` | HIGH | `ssm:StartSession` |
+| `PE-024` | MEDIUM | `sts:AssumeRole` |
+
+**Limitation:** only grants on all resources are evaluated. Grants scoped to specific resources (for example `iam:PassRole` on one role ARN) are intentionally ignored to avoid noise, and permission boundaries, SCPs and conditions on `Allow` statements are not evaluated.
+
 ## Severity Ratings
 
 | Severity   | Criteria                                                                        |
