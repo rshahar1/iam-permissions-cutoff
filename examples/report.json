@@ -1,0 +1,316 @@
+{
+  "schema_version": "1.0.0",
+  "account_id": "123456789012",
+  "audit_timestamp": "2026-03-10T14:32:00Z",
+  "threshold_days": 90,
+  "include_aws_managed": false,
+  "filters": {
+    "path_prefix": null,
+    "name_pattern": null,
+    "tags": null
+  },
+  "summary": {
+    "total_findings": 15,
+    "principals_scanned": 87,
+    "data_gaps_count": 2,
+    "by_category": {
+      "permission": 6,
+      "dormancy": 5,
+      "unused_permission": 4
+    },
+    "by_severity": {
+      "critical": 4,
+      "high": 5,
+      "medium": 4,
+      "low": 2
+    }
+  },
+  "findings": [
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/admin-emergency",
+      "principal_name": "admin-emergency",
+      "principal_type": "role",
+      "category": "permission",
+      "severity": "critical",
+      "title": "Full administrator access: Action:* Resource:*",
+      "description": "Inline policy EmergencyAccess grants unrestricted access to all AWS services and resources.",
+      "recommendation": "Scope actions and resources to the minimum required. Replace with service-specific policies.",
+      "metadata": {
+        "policy_name": "EmergencyAccess",
+        "policy_type": "inline",
+        "actions": [
+          "*"
+        ],
+        "resources": [
+          "*"
+        ],
+        "has_deny_statements": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:user/dev-lead",
+      "principal_name": "dev-lead",
+      "principal_type": "user",
+      "category": "permission",
+      "severity": "critical",
+      "title": "Full administrator access: Action:* Resource:*",
+      "description": "Managed policy AdministratorAccess grants unrestricted access. Note: this principal also has Deny statements that may restrict effective permissions.",
+      "recommendation": "Replace AdministratorAccess with scoped policies for the required services.",
+      "metadata": {
+        "policy_name": "AdministratorAccess",
+        "policy_type": "managed",
+        "actions": [
+          "*"
+        ],
+        "resources": [
+          "*"
+        ],
+        "has_deny_statements": true
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:user/intern-2024",
+      "principal_name": "intern-2024",
+      "principal_type": "user",
+      "category": "dormancy",
+      "severity": "critical",
+      "title": "User has never logged in",
+      "description": "User account was created 9 months ago, no console or API activity recorded.",
+      "recommendation": "Delete this unused user account.",
+      "metadata": {
+        "last_activity": null,
+        "days_inactive": null,
+        "has_password": true
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/legacy-deploy-role",
+      "principal_name": "legacy-deploy-role",
+      "principal_type": "role",
+      "category": "dormancy",
+      "severity": "critical",
+      "title": "Role has never been assumed",
+      "description": "Role was created 14 months ago and has never been used.",
+      "recommendation": "Delete this unused role \u2014 it serves no purpose and increases attack surface.",
+      "metadata": {
+        "last_activity": null,
+        "days_inactive": null,
+        "has_password": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/backend-api",
+      "principal_name": "backend-api",
+      "principal_type": "role",
+      "category": "permission",
+      "severity": "high",
+      "title": "Full-service wildcard: s3:*",
+      "description": "Inline policy S3FullAccess grants all S3 actions on all buckets.",
+      "recommendation": "Restrict to specific S3 buckets and actions (e.g., s3:GetObject, s3:PutObject on the application bucket).",
+      "metadata": {
+        "policy_name": "S3FullAccess",
+        "policy_type": "inline",
+        "actions": [
+          "s3:*"
+        ],
+        "resources": [
+          "*"
+        ],
+        "has_deny_statements": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/ci-deploy",
+      "principal_name": "ci-deploy",
+      "principal_type": "role",
+      "category": "unused_permission",
+      "severity": "high",
+      "title": "Unused IAM service permissions",
+      "description": "Granted iam:CreateRole, iam:DeleteRole, iam:AttachRolePolicy but none used in 90 days.",
+      "recommendation": "Remove unused IAM actions: iam:CreateRole, iam:DeleteRole, iam:AttachRolePolicy. Keep: iam:PassRole.",
+      "metadata": {
+        "service_namespace": "iam",
+        "unused_actions": [
+          "CreateRole",
+          "DeleteRole",
+          "AttachRolePolicy"
+        ],
+        "keep_actions": [
+          "PassRole"
+        ],
+        "granularity": "ACTION_LEVEL"
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/ci-jenkins-old",
+      "principal_name": "ci-jenkins-old",
+      "principal_type": "role",
+      "category": "dormancy",
+      "severity": "high",
+      "title": "Role unused for 245 days",
+      "description": "Last assumed on 2025-07-10.",
+      "recommendation": "Delete this dormant role or investigate if it is still needed.",
+      "metadata": {
+        "last_activity": "2025-07-10T08:23:00Z",
+        "days_inactive": 245,
+        "has_password": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/lambda-processor",
+      "principal_name": "lambda-processor",
+      "principal_type": "role",
+      "category": "permission",
+      "severity": "high",
+      "title": "Full-service wildcard: dynamodb:*",
+      "description": "Managed policy AmazonDynamoDBFullAccess grants all DynamoDB actions.",
+      "recommendation": "Restrict to specific tables and actions (e.g., dynamodb:GetItem, dynamodb:PutItem).",
+      "metadata": {
+        "policy_name": "AmazonDynamoDBFullAccess",
+        "policy_type": "managed",
+        "actions": [
+          "dynamodb:*"
+        ],
+        "resources": [
+          "*"
+        ],
+        "has_deny_statements": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:user/svc-monitoring",
+      "principal_name": "svc-monitoring",
+      "principal_type": "user",
+      "category": "dormancy",
+      "severity": "high",
+      "title": "User inactive for 180 days",
+      "description": "Last API key usage on 2025-09-12.",
+      "recommendation": "Disable access keys and delete this user if no longer needed.",
+      "metadata": {
+        "last_activity": "2025-09-12T14:05:00Z",
+        "days_inactive": 180,
+        "has_password": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/backend-api",
+      "principal_name": "backend-api",
+      "principal_type": "role",
+      "category": "unused_permission",
+      "severity": "medium",
+      "title": "Unused S3 actions detected",
+      "description": "Granted s3:* but only s3:GetObject and s3:ListBucket were used in 90 days.",
+      "recommendation": "Replace s3:* with specific actions: s3:GetObject, s3:ListBucket.",
+      "metadata": {
+        "service_namespace": "s3",
+        "unused_actions": [
+          "PutObject",
+          "DeleteObject",
+          "PutBucketPolicy",
+          "GetBucketAcl"
+        ],
+        "keep_actions": [
+          "GetObject",
+          "ListBucket"
+        ],
+        "granularity": "ACTION_LEVEL"
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/data-pipeline-staging",
+      "principal_name": "data-pipeline-staging",
+      "principal_type": "role",
+      "category": "dormancy",
+      "severity": "medium",
+      "title": "Role unused for 95 days",
+      "description": "Last assumed on 2025-12-06. Slightly exceeds the 90-day dormancy threshold.",
+      "recommendation": "Verify if the staging pipeline is still active; delete if decommissioned.",
+      "metadata": {
+        "last_activity": "2025-12-06T10:00:00Z",
+        "days_inactive": 95,
+        "has_password": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/ecs-task-role",
+      "principal_name": "ecs-task-role",
+      "principal_type": "role",
+      "category": "permission",
+      "severity": "medium",
+      "title": "Wildcard resource with specific actions",
+      "description": "Policy ECSTaskAccess grants 8 EC2 actions on Resource:*.",
+      "recommendation": "Restrict resource ARNs to the specific VPC, subnets, or instances required.",
+      "metadata": {
+        "policy_name": "ECSTaskAccess",
+        "policy_type": "inline",
+        "actions": [
+          "ec2:DescribeInstances",
+          "ec2:DescribeSubnets"
+        ],
+        "resources": [
+          "*"
+        ],
+        "has_deny_statements": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/lambda-processor",
+      "principal_name": "lambda-processor",
+      "principal_type": "role",
+      "category": "unused_permission",
+      "severity": "medium",
+      "title": "Unused CloudWatch Logs permissions",
+      "description": "Service logs.amazonaws.com was never accessed in 90 days.",
+      "recommendation": "Remove CloudWatch Logs access if this Lambda does not write logs through this role.",
+      "metadata": {
+        "service_namespace": "logs",
+        "unused_actions": null,
+        "keep_actions": null,
+        "granularity": "SERVICE_LEVEL"
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/orphan-role",
+      "principal_name": "orphan-role",
+      "principal_type": "role",
+      "category": "permission",
+      "severity": "low",
+      "title": "Role has zero attached or inline policies",
+      "description": "This role has no policies and serves no functional purpose.",
+      "recommendation": "Review and attach a policy or delete this entity.",
+      "metadata": {
+        "policy_name": null,
+        "policy_type": null,
+        "actions": [],
+        "resources": [],
+        "has_deny_statements": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:user/readonly-analyst",
+      "principal_name": "readonly-analyst",
+      "principal_type": "user",
+      "category": "unused_permission",
+      "severity": "low",
+      "title": "Unused read-only Redshift access",
+      "description": "Granted redshift:Describe* but Redshift was never accessed in 90 days.",
+      "recommendation": "Remove Redshift read access if no longer needed for analytics.",
+      "metadata": {
+        "service_namespace": "redshift",
+        "unused_actions": null,
+        "keep_actions": null,
+        "granularity": "SERVICE_LEVEL"
+      }
+    }
+  ],
+  "data_gaps": [
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/new-feature-flag",
+      "reason": "Newly created (less than 24 hours old)"
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/batch-nightly",
+      "reason": "Access Advisor API timed out after 10 minutes"
+    }
+  ]
+}
