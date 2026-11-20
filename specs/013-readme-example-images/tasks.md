@@ -6,4 +6,4 @@
 - [x] T004 Rewrite README "Output Formats" (provenance note, images, refreshed JSON snippet, links to `examples/`)
 - [x] T005 Regenerate `examples/report.{txt,json,html}`
 - [x] T006 Verify only the placeholder account ID appears and preview the README via GitHub's Markdown API
-- [ ] T007 Verify CI passes on the pull request
+- [x] T007 Confirm CI cannot be affected: no test, lint, type-check, audit or smoke step reads README.md, docs/ or examples/ (docs-only change, merged while the PR #10 checks were still running)
