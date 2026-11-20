@@ -6,4 +6,4 @@
 - [x] T004 Update dormancy unit tests and add grace-period, boundary, naive-datetime and 400-day tests
 - [x] T005 Update README dormancy and severity descriptions
 - [x] T006 Run ruff, mypy (strict), pytest and the emulator smoke test
-- [ ] T007 Verify CI passes on the pull request
+- [x] T007 Verify CI passes on the pull request — all 5 checks green on PR #5, 2026-11-20
