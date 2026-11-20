@@ -24,6 +24,8 @@ from iam_audit.reporters.json_reporter import format_json_report
 from iam_audit.reporters.text import format_error, format_text_report
 
 if TYPE_CHECKING:
+    from mypy_boto3_iam import IAMClient
+
     from iam_audit.models import DataGap, Finding, Principal
 
 logger = logging.getLogger("iam_audit")
@@ -190,7 +192,7 @@ def _build_filters(args: argparse.Namespace) -> FiltersApplied:
     )
 
 
-def _collect_principals(iam_client: object, include_aws_managed: bool) -> list[Principal]:
+def _collect_principals(iam_client: IAMClient, include_aws_managed: bool) -> list[Principal]:
     principals: list[Principal] = []
     print("Scanning IAM roles...", file=sys.stderr)
     principals.extend(collect_roles(iam_client, include_aws_managed=include_aws_managed))
@@ -200,7 +202,7 @@ def _collect_principals(iam_client: object, include_aws_managed: bool) -> list[P
     return principals
 
 
-def _enrich_with_policies(iam_client: object, principals: list[Principal]) -> list[Principal]:
+def _enrich_with_policies(iam_client: IAMClient, principals: list[Principal]) -> list[Principal]:
     print(f"Analyzing policies for {len(principals)} principals...", file=sys.stderr)
     enriched: list[Principal] = []
     for p in principals:
@@ -261,7 +263,7 @@ def _build_report(
     return report
 
 
-def _init_aws() -> tuple[object, str]:
+def _init_aws() -> tuple[IAMClient, str]:
     session = create_session()
     iam_client = create_iam_client(session=session)
     account_id = get_account_id(session)

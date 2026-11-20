@@ -4,7 +4,7 @@ import json
 import logging
 import urllib.parse
 from dataclasses import replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from iam_audit.models import (
     AttachedPolicy,
@@ -16,6 +16,8 @@ from iam_audit.models import (
 )
 
 if TYPE_CHECKING:
+    from mypy_boto3_iam import IAMClient
+
     from iam_audit.models import Principal
 
 logger = logging.getLogger(__name__)
@@ -32,7 +34,7 @@ def _as_list(value: object) -> list[str]:
     return [str(value)]
 
 
-def _parse_policy_document(doc: dict) -> PolicyDocument:
+def _parse_policy_document(doc: dict[str, Any]) -> PolicyDocument:
     """Parse a raw IAM policy document, including NotAction/NotResource elements."""
     version = doc.get("Version", "2012-10-17")
     raw_statements = doc.get("Statement", [])
@@ -53,7 +55,14 @@ def _parse_policy_document(doc: dict) -> PolicyDocument:
     return PolicyDocument(version=version, statements=statements)
 
 
-def _fetch_inline_policies(iam_client, principal: Principal) -> list[InlinePolicy]:
+def _load_document(raw: object) -> dict[str, Any]:
+    """Return a policy document as a dict, decoding URL-encoded JSON strings."""
+    if isinstance(raw, str):
+        raw = json.loads(urllib.parse.unquote(raw))
+    return cast("dict[str, Any]", raw)
+
+
+def _fetch_inline_policies(iam_client: IAMClient, principal: Principal) -> list[InlinePolicy]:
     result: list[InlinePolicy] = []
     if isinstance(principal, IAMRole):
         paginator = iam_client.get_paginator("list_role_policies")
@@ -63,10 +72,8 @@ def _fetch_inline_policies(iam_client, principal: Principal) -> list[InlinePolic
                     resp = iam_client.get_role_policy(
                         RoleName=principal.name, PolicyName=policy_name
                     )
-                    doc = resp.get("PolicyDocument", {})
-                    if isinstance(doc, str):
-                        doc = json.loads(urllib.parse.unquote(doc))
-                    parsed = _parse_policy_document(doc)
+                    doc: object = resp.get("PolicyDocument", {})
+                    parsed = _parse_policy_document(_load_document(doc))
                     result.append(InlinePolicy(name=policy_name, document=parsed))
                 except Exception as e:
                     logger.warning(
@@ -74,17 +81,15 @@ def _fetch_inline_policies(iam_client, principal: Principal) -> list[InlinePolic
                         policy_name, principal.name, e,
                     )
     elif isinstance(principal, IAMUser):
-        paginator = iam_client.get_paginator("list_user_policies")
-        for page in paginator.paginate(UserName=principal.name):
+        user_paginator = iam_client.get_paginator("list_user_policies")
+        for page in user_paginator.paginate(UserName=principal.name):
             for policy_name in page.get("PolicyNames", []):
                 try:
-                    resp = iam_client.get_user_policy(
+                    user_resp = iam_client.get_user_policy(
                         UserName=principal.name, PolicyName=policy_name
                     )
-                    doc = resp.get("PolicyDocument", {})
-                    if isinstance(doc, str):
-                        doc = json.loads(urllib.parse.unquote(doc))
-                    parsed = _parse_policy_document(doc)
+                    user_doc: object = user_resp.get("PolicyDocument", {})
+                    parsed = _parse_policy_document(_load_document(user_doc))
                     result.append(InlinePolicy(name=policy_name, document=parsed))
                 except Exception as e:
                     logger.warning(
@@ -94,7 +99,7 @@ def _fetch_inline_policies(iam_client, principal: Principal) -> list[InlinePolic
     return result
 
 
-def _fetch_attached_policies(iam_client, principal: Principal) -> list[AttachedPolicy]:
+def _fetch_attached_policies(iam_client: IAMClient, principal: Principal) -> list[AttachedPolicy]:
     result: list[AttachedPolicy] = []
     if isinstance(principal, IAMRole):
         paginator = iam_client.get_paginator("list_attached_role_policies")
@@ -109,10 +114,8 @@ def _fetch_attached_policies(iam_client, principal: Principal) -> list[AttachedP
                     version_resp = iam_client.get_policy_version(
                         PolicyArn=policy_arn, VersionId=default_version
                     )
-                    doc = version_resp["PolicyVersion"].get("Document", {})
-                    if isinstance(doc, str):
-                        doc = json.loads(urllib.parse.unquote(doc))
-                    parsed = _parse_policy_document(doc)
+                    doc: object = version_resp["PolicyVersion"].get("Document", {})
+                    parsed = _parse_policy_document(_load_document(doc))
                     result.append(
                         AttachedPolicy(
                             arn=policy_arn,
@@ -127,8 +130,8 @@ def _fetch_attached_policies(iam_client, principal: Principal) -> list[AttachedP
                         att.get("PolicyArn"), principal.name, e,
                     )
     elif isinstance(principal, IAMUser):
-        paginator = iam_client.get_paginator("list_attached_user_policies")
-        for page in paginator.paginate(UserName=principal.name):
+        user_paginator = iam_client.get_paginator("list_attached_user_policies")
+        for page in user_paginator.paginate(UserName=principal.name):
             for att in page.get("AttachedPolicies", []):
                 try:
                     policy_arn = att["PolicyArn"]
@@ -139,10 +142,8 @@ def _fetch_attached_policies(iam_client, principal: Principal) -> list[AttachedP
                     version_resp = iam_client.get_policy_version(
                         PolicyArn=policy_arn, VersionId=default_version
                     )
-                    doc = version_resp["PolicyVersion"].get("Document", {})
-                    if isinstance(doc, str):
-                        doc = json.loads(urllib.parse.unquote(doc))
-                    parsed = _parse_policy_document(doc)
+                    user_doc: object = version_resp["PolicyVersion"].get("Document", {})
+                    parsed = _parse_policy_document(_load_document(user_doc))
                     result.append(
                         AttachedPolicy(
                             arn=policy_arn,
@@ -159,7 +160,7 @@ def _fetch_attached_policies(iam_client, principal: Principal) -> list[AttachedP
     return result
 
 
-def _fetch_group_policies(iam_client, user: IAMUser) -> list[AttachedPolicy]:
+def _fetch_group_policies(iam_client: IAMClient, user: IAMUser) -> list[AttachedPolicy]:
     result: list[AttachedPolicy] = []
     for group_name in user.group_memberships:
         paginator = iam_client.get_paginator("list_attached_group_policies")
@@ -174,10 +175,8 @@ def _fetch_group_policies(iam_client, user: IAMUser) -> list[AttachedPolicy]:
                     version_resp = iam_client.get_policy_version(
                         PolicyArn=policy_arn, VersionId=default_version
                     )
-                    doc = version_resp["PolicyVersion"].get("Document", {})
-                    if isinstance(doc, str):
-                        doc = json.loads(urllib.parse.unquote(doc))
-                    parsed = _parse_policy_document(doc)
+                    doc: object = version_resp["PolicyVersion"].get("Document", {})
+                    parsed = _parse_policy_document(_load_document(doc))
                     result.append(
                         AttachedPolicy(
                             arn=policy_arn,
@@ -194,15 +193,19 @@ def _fetch_group_policies(iam_client, user: IAMUser) -> list[AttachedPolicy]:
     return result
 
 
-def collect_policies_for_principal(iam_client, principal: Principal) -> Principal:
+def collect_policies_for_principal(iam_client: IAMClient, principal: Principal) -> Principal:
     attached_policies = _fetch_attached_policies(iam_client, principal)
     inline_policies = _fetch_inline_policies(iam_client, principal)
-    updated = replace(
+    if isinstance(principal, IAMUser):
+        group_policies = _fetch_group_policies(iam_client, principal)
+        return replace(
+            principal,
+            attached_policies=attached_policies,
+            inline_policies=inline_policies,
+            group_policies=group_policies,
+        )
+    return replace(
         principal,
         attached_policies=attached_policies,
         inline_policies=inline_policies,
     )
-    if isinstance(principal, IAMUser):
-        group_policies = _fetch_group_policies(iam_client, principal)
-        updated = replace(updated, group_policies=group_policies)
-    return updated

@@ -53,7 +53,8 @@ def load_actions_map() -> dict[str, list[str]]:
     data = (
         importlib.resources.files("iam_audit") / "data" / "iam_actions.json"
     ).read_text()
-    return json.loads(data)
+    result: dict[str, list[str]] = json.loads(data)
+    return result
 
 
 def _split_by_service(patterns: list[str]) -> dict[str, set[str]]:

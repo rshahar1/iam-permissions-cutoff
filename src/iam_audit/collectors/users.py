@@ -1,18 +1,21 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from iam_audit.models import IAMUser
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+    from datetime import datetime
+
+    from mypy_boto3_iam import IAMClient
 
 
-def _fetch_user_tags(iam_client, user_name: str) -> dict[str, str]:
+def _fetch_user_tags(iam_client: IAMClient, user_name: str) -> dict[str, str]:
     tags: dict[str, str] = {}
     marker = None
     while True:
-        kwargs: dict = {"UserName": user_name}
+        kwargs: dict[str, Any] = {"UserName": user_name}
         if marker:
             kwargs["Marker"] = marker
         resp = iam_client.list_user_tags(**kwargs)
@@ -24,9 +27,9 @@ def _fetch_user_tags(iam_client, user_name: str) -> dict[str, str]:
     return tags
 
 
-def _most_recent_access_key_used(iam_client, user_name: str):
+def _most_recent_access_key_used(iam_client: IAMClient, user_name: str) -> datetime | None:
     access_key_paginator = iam_client.get_paginator("list_access_keys")
-    most_recent = None
+    most_recent: datetime | None = None
     for page in access_key_paginator.paginate(UserName=user_name):
         for key in page.get("AccessKeyMetadata", []):
             key_id = key["AccessKeyId"]
@@ -37,7 +40,7 @@ def _most_recent_access_key_used(iam_client, user_name: str):
     return most_recent
 
 
-def _fetch_group_names(iam_client, user_name: str) -> list[str]:
+def _fetch_group_names(iam_client: IAMClient, user_name: str) -> list[str]:
     paginator = iam_client.get_paginator("list_groups_for_user")
     groups = []
     for page in paginator.paginate(UserName=user_name):
@@ -47,7 +50,7 @@ def _fetch_group_names(iam_client, user_name: str) -> list[str]:
 
 
 def collect_users(
-    iam_client,
+    iam_client: IAMClient,
     include_aws_managed: bool = False,
 ) -> Generator[IAMUser, None, None]:
     paginator = iam_client.get_paginator("list_users")
