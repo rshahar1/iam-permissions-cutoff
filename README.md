@@ -233,6 +233,14 @@ ruff check src tests
 mypy src
 ```
 
+### Local emulator smoke test
+
+```bash
+python scripts/emulator_smoke.py [--keep-reports DIR]
+```
+
+Starts a local [moto](https://github.com/getmoto/moto) IAM emulator, seeds one principal per known scenario, runs the real `iam-audit` CLI against it (default and `--include-aws-managed`) and fails (exit 1) if the findings differ from the expectations table in the script. It needs no AWS account or credentials and never contacts AWS: the environment is scrubbed of all `AWS_*` variables and pinned to the local emulator. Limits: moto does not emulate Access Advisor, so unused-permission checks are not covered, and freshly created principals show "never used" dormancy findings, which is expected.
+
 ### Security audit
 
 ```bash

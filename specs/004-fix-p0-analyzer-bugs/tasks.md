@@ -66,7 +66,7 @@
 - [x] T019 [P] Update `--include-aws-managed` help text in `src/iam_audit/cli.py`, `README.md`, and any docs to say it controls principal scope only
 - [ ] T020 [P] Update `specs/003-iam-audit-cli/contracts/json-schema.md` cross-reference to `contracts/json-schema-delta.md` (if desired by maintainers) — deferred: not done in this change
 - [x] T021 Run `ruff check` and `pytest --cov`; confirm no violations and coverage >= 80%
-- [ ] T022 Re-run against a sample account (or fixtures) to confirm reserved-role noise is gone and AWS-managed policy findings remain — pending: needs a live AWS account run by the maintainer
+- [x] T022 Re-run against a sample account (or fixtures) to confirm reserved-role noise is gone and AWS-managed policy findings remain — verified 2026-11-20 against a local moto emulator (reserved/service-linked roles excluded by default, AWS-managed AdministratorAccess still CRITICAL); reusable via `scripts/emulator_smoke.py` (feature 005). Access Advisor is not emulated, so a run against a real account is still recommended.
 - [x] T023 Verify constitution limits (functions <= 40 lines, files <= 400 lines) on touched files
 - [x] T024 Add GitHub Actions CI (`.github/workflows/ci.yml`): ruff + pytest with coverage on Python 3.12/3.13, mypy (non-blocking until the 30 pre-existing errors are fixed), and blocking `pip-audit`; actions pinned to commit SHAs, read-only token
 - [x] T025 Bump `pytest` to `>=9.0.3,<10.0.0` in `requirements-dev.txt` to resolve PYSEC-2026-1845 flagged by `pip-audit`
