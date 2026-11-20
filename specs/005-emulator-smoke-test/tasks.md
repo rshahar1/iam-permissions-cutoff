@@ -32,7 +32,7 @@
 - [x] T010 [P] Add "Local emulator smoke test" subsection under Development in `README.md`
 - [x] T011 Run the script locally: exit 0 on the seeded scenarios; ruff clean
 - [x] T012 Mark 004 T022 done with a pointer to this feature in `specs/004-fix-p0-analyzer-bugs/tasks.md`
-- [ ] T013 Verify the `smoke` CI job passes on the pull request
+- [x] T013 Verify the `smoke` CI job passes on the pull request — all 5 checks green on PR #2 (commit b92079d), 2026-11-20
 
 ---
 
