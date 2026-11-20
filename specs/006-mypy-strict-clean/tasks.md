@@ -19,4 +19,4 @@
 ## Phase 3: Verification
 
 - [x] T009 pytest (162 pass), ruff, `scripts/emulator_smoke.py` exit 0, pip-audit clean
-- [ ] T010 Verify CI passes on the pull request
+- [x] T010 Verify CI passes on the pull request — all 5 checks green on PR #3, 2026-11-20
