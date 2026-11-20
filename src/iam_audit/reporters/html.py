@@ -23,11 +23,7 @@ SEVERITY_COLORS: dict[str, str] = {
     "low": "#0d6efd",
 }
 
-CATEGORY_DISPLAY: dict[str, str] = {
-    "dormancy": "Dormancy Findings",
-    "permission": "Permission Findings",
-    "unused_permission": "Unused Permission Findings",
-}
+CATEGORY_DISPLAY: dict[str, str] = {c.value: c.display_name for c in FindingCategory}
 
 CATEGORY_ORDER: list[str] = [c.value for c in FindingCategory]
 

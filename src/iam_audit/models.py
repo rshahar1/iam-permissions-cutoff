@@ -8,9 +8,23 @@ from datetime import datetime  # noqa: TC003 — used at runtime in property bod
 
 
 class FindingCategory(enum.Enum):
+    """Finding categories, in report order. Add new categories here with a display name."""
+
     DORMANCY = "dormancy"
     PERMISSION = "permission"
     UNUSED_PERMISSION = "unused_permission"
+
+    @property
+    def display_name(self) -> str:
+        """Section heading used by the text and HTML reporters."""
+        return _CATEGORY_DISPLAY_NAMES[self]
+
+
+_CATEGORY_DISPLAY_NAMES: dict[FindingCategory, str] = {
+    FindingCategory.DORMANCY: "Dormancy Findings",
+    FindingCategory.PERMISSION: "Permission Findings",
+    FindingCategory.UNUSED_PERMISSION: "Unused Permission Findings",
+}
 
 
 class Severity(enum.Enum):
