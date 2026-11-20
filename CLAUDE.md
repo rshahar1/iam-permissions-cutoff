@@ -143,7 +143,6 @@ Adding a new check (documented in the `pipeline.py` module docstring; reporters 
   are always analyzed.
 - Privilege-escalation checks only evaluate grants on all resources; permission boundaries, SCPs and Allow-statement
   conditions are not evaluated (documented limitation).
-- `README.md` quotes a test count and the install snippet (`cd src`) that may lag the repo; trust CI commands above.
 - `examples/` and `docs/images/` are generated from the smoke-test emulator account; regenerate them together.
 
 ## Active Technologies

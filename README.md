@@ -23,14 +23,15 @@ A CLI tool to audit AWS IAM roles and users for over-provisioning. It identifies
 ## Installation
 
 ```bash
-cd src
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e .
 ```
 
-For development:
+For development (dev tools plus the package in editable mode, as CI does):
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt -e .
 ```
 
 ## Required AWS Permissions
@@ -291,7 +292,7 @@ iam-audit permissions --trusted-accounts 111122223333,444455556666
 ### Running tests
 
 ```bash
-# All tests (113 tests)
+# All tests
 pytest
 
 # Unit tests only
@@ -310,8 +311,9 @@ pytest --cov=iam_audit --cov-report=term-missing
 ### Linting and type checking
 
 ```bash
-ruff check src tests
-mypy src
+ruff check src tests scripts
+mypy
+pip-audit -r requirements-dev.txt --strict
 ```
 
 ### Local emulator smoke test
