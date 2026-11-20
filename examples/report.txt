@@ -1,43 +1,57 @@
 === IAM Audit Results ===
-Principals scanned: 87
-Findings: 15
-
---- Dormancy Findings ---
-CRITICAL  user  intern-2024                               User has never logged in
-                Recommendation: Delete this unused user account.
-CRITICAL  role  legacy-deploy-role                        Role has never been assumed
-                Recommendation: Delete this unused role — it serves no purpose and increases attack surface.
-HIGH      role  ci-jenkins-old                            Role unused for 245 days
-                Recommendation: Delete this dormant role or investigate if it is still needed.
-HIGH      user  svc-monitoring                            User inactive for 180 days
-                Recommendation: Disable access keys and delete this user if no longer needed.
-MEDIUM    role  data-pipeline-staging                     Role unused for 95 days
-                Recommendation: Verify if the staging pipeline is still active; delete if decommissioned.
+Principals scanned: 11
+Findings: 22
 
 --- Permission Findings ---
-CRITICAL  role  admin-emergency                           Full administrator access: Action:* Resource:*
-                Recommendation: Scope actions and resources to the minimum required. Replace with service-specific policies.
-CRITICAL  user  dev-lead                                  Full administrator access: Action:* Resource:*
-                Recommendation: Replace AdministratorAccess with scoped policies for the required services.
-HIGH      role  backend-api                               Full-service wildcard: s3:*
-                Recommendation: Restrict to specific S3 buckets and actions (e.g., s3:GetObject, s3:PutObject on the application bucket).
-HIGH      role  lambda-processor                          Full-service wildcard: dynamodb:*
-                Recommendation: Restrict to specific tables and actions (e.g., dynamodb:GetItem, dynamodb:PutItem).
-MEDIUM    role  ecs-task-role                             Wildcard resource with specific actions
-                Recommendation: Restrict resource ARNs to the specific VPC, subnets, or instances required.
-LOW       role  orphan-role                               Role has zero attached or inline policies
-                Recommendation: Review and attach a policy or delete this entity.
+CRITICAL  role  ci-admin                                  Overly permissive policy: AdministratorAccess
+                Recommendation: Remove this policy or replace with least-privilege permissions. Action '*' and Resource '*' grants full access. This is an AWS-managed policy and cannot be edited: detach it and attach a customer-managed least-privilege policy instead.
+CRITICAL  role  mixed-star                                Overly permissive policy: mixed-star-inline
+                Recommendation: Remove this policy or replace with least-privilege permissions. Action '*' and Resource '*' grants full access.
+HIGH      role  bucket-star                               Overly permissive policy: bucket-star-inline
+                Recommendation: Restrict permissions: use specific actions instead of service wildcards (e.g. s3:*), and scope resources to specific ARNs where possible.
+HIGH      role  power-notaction                           Overly permissive policy: power-notaction-inline
+                Recommendation: Replace NotAction with an explicit allow-list of the actions this principal needs: NotAction grants every action not listed, including future AWS actions.
+MEDIUM    user  deploy-bot                                Overly permissive policy: deployers-read
+                Recommendation: Review and narrow permissions: prefer specific actions over wildcards and restrict resources to required ARNs.
+MEDIUM    role  mixed-resource                            Overly permissive policy: mixed-resource-inline
+                Recommendation: Review and narrow permissions: prefer specific actions over wildcards and restrict resources to required ARNs.
+MEDIUM    role  passrole-runner                           Overly permissive policy: passrole-runner-inline
+                Recommendation: Review and narrow permissions: prefer specific actions over wildcards and restrict resources to required ARNs.
+LOW       user  console-no-mfa                            Principal has no policies attached
+                Recommendation: Attach appropriate policies or add inline policies if this principal should have access.
 
 --- Unused Permission Findings ---
-HIGH      role  ci-deploy                                 Unused IAM service permissions
-                Recommendation: Remove unused IAM actions: iam:CreateRole, iam:DeleteRole, iam:AttachRolePolicy. Keep: iam:PassRole.
-MEDIUM    role  backend-api                               Unused S3 actions detected
-                Recommendation: Replace s3:* with specific actions: s3:GetObject, s3:ListBucket.
-MEDIUM    role  lambda-processor                          Unused CloudWatch Logs permissions
-                Recommendation: Remove CloudWatch Logs access if this Lambda does not write logs through this role.
-LOW       user  readonly-analyst                          Unused read-only Redshift access
-                Recommendation: Remove Redshift read access if no longer needed for analytics.
+HIGH      role  mixed-resource                            Unused iam permissions: CreateAccessKey, PassRole
+                Recommendation: Remove unused iam permissions from policies.
+HIGH      role  power-notaction                           Unused kms permissions
+                Recommendation: Remove unused kms permissions from policies.
+HIGH      role  power-notaction                           Unused secretsmanager permissions
+                Recommendation: Remove unused secretsmanager permissions from policies.
+MEDIUM    user  deploy-bot                                Unused s3 permissions: GetBucketPolicy, GetBucketTagging, GetBucketVersioning
+                Recommendation: Remove unused s3 permissions from policies.
 
---- Data Gaps ---
-arn:aws:iam::123456789012:role/new-feature-flag: Newly created (less than 24 hours old)
-arn:aws:iam::123456789012:role/batch-nightly: Access Advisor API timed out after 10 minutes
+--- Privilege Escalation Findings ---
+HIGH      role  mixed-resource                            Privilege escalation path: Create access keys for other users
+                Recommendation: Scope iam:CreateAccessKey to the principal's own user (${aws:username}).
+HIGH      role  passrole-runner                           Privilege escalation path: Pass a role to a new EC2 instance
+                Recommendation: Scope iam:PassRole to specific role ARNs and add an iam:PassedToService condition.
+HIGH      role  power-notaction                           Privilege escalation path: Overwrite Lambda function code
+                Recommendation: Scope lambda:UpdateFunctionCode to specific functions.
+HIGH      role  power-notaction                           Privilege escalation path: Update a Glue dev endpoint
+                Recommendation: Remove glue:UpdateDevEndpoint or scope it to specific endpoints.
+HIGH      role  power-notaction                           Privilege escalation path: Run commands through SSM
+                Recommendation: Scope ssm:SendCommand to specific instances and documents.
+HIGH      role  power-notaction                           Privilege escalation path: Start SSM sessions
+                Recommendation: Scope ssm:StartSession to specific instances.
+MEDIUM    role  power-notaction                           Privilege escalation path: Assume any role
+                Recommendation: Scope sts:AssumeRole to specific role ARNs.
+
+--- Credential Findings ---
+HIGH      user  console-no-mfa                            Console access without MFA
+                Recommendation: Require this user to enrol an MFA device, or remove the console password.
+
+--- Trust Policy Findings ---
+CRITICAL  role  gh-deploy                                 Trust policy: Any GitHub repository can assume this role
+                Recommendation: Add a StringEquals/StringLike condition on token.actions.githubusercontent.com:sub limiting it to your repository and branch, e.g. repo:my-org/my-repo:ref:refs/heads/main.
+CRITICAL  role  trust-anyone                              Trust policy: Any AWS account can assume this role
+                Recommendation: Replace '*' with specific account or role ARNs, or add a condition such as aws:PrincipalOrgID to restrict callers to your organization.
