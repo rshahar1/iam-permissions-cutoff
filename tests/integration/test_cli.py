@@ -89,7 +89,7 @@ def test_permissions_subcommand_finds_wildcard(capsys: pytest.CaptureFixture[str
     _setup_iam_resources()
     with (
         patch("iam_audit.cli.get_account_id", return_value="123456789012"),
-        patch("iam_audit.cli.collect_access_advisor", return_value=({}, [])),
+        patch("iam_audit.pipeline.collect_access_advisor", return_value=({}, [])),
         pytest.raises(SystemExit) as exc_info,
         patch("sys.argv", ["iam-audit", "permissions"]),
     ):
@@ -123,7 +123,7 @@ def test_report_html_output_writes_file(tmp_path: Path) -> None:
     out_file = tmp_path / "report.html"
     with (
         patch("iam_audit.cli.get_account_id", return_value="123456789012"),
-        patch("iam_audit.cli.collect_access_advisor", return_value=({}, [])),
+        patch("iam_audit.pipeline.collect_access_advisor", return_value=({}, [])),
         pytest.raises(SystemExit) as exc_info,
         patch("sys.argv", [
             "iam-audit", "report", "--format", "html",
