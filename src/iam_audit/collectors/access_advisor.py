@@ -3,17 +3,19 @@ from __future__ import annotations
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from iam_audit.models import ActionLastAccessed, DataGap, ServiceLastAccessedRecord
 
 if TYPE_CHECKING:
+    from mypy_boto3_iam import IAMClient
+
     from iam_audit.models import Principal
 
 logger = logging.getLogger(__name__)
 
 
-def _poll_job(iam_client, job_id: str, timeout: float = 600.0) -> dict:
+def _poll_job(iam_client: IAMClient, job_id: str, timeout: float = 600.0) -> dict[str, Any]:
     start = time.monotonic()
     delay = 1.0
     max_delay = 30.0
@@ -24,7 +26,7 @@ def _poll_job(iam_client, job_id: str, timeout: float = 600.0) -> dict:
         resp = iam_client.get_service_last_accessed_details(JobId=job_id)
         status = resp.get("JobStatus")
         if status == "COMPLETED":
-            return resp
+            return cast("dict[str, Any]", resp)
         if status == "FAILED":
             err = resp.get("Error", {})
             msg = err.get("Message", "Unknown error")
@@ -33,7 +35,7 @@ def _poll_job(iam_client, job_id: str, timeout: float = 600.0) -> dict:
         delay = min(delay * 2, max_delay)
 
 
-def _parse_services(services: list[dict]) -> list[ServiceLastAccessedRecord]:
+def _parse_services(services: list[dict[str, Any]]) -> list[ServiceLastAccessedRecord]:
     records: list[ServiceLastAccessedRecord] = []
     for svc in services:
         tracked = svc.get("TrackedActionsLastAccessed")
@@ -58,24 +60,27 @@ def _parse_services(services: list[dict]) -> list[ServiceLastAccessedRecord]:
     return records
 
 
-def _fetch_for_principal(iam_client, principal_arn: str) -> list[ServiceLastAccessedRecord]:
+def _fetch_for_principal(iam_client: IAMClient, principal_arn: str) -> list[ServiceLastAccessedRecord]:
     resp = iam_client.generate_service_last_accessed_details(
         Arn=principal_arn,
         Granularity="ACTION_LEVEL",
     )
     job_id = resp["JobId"]
     result = _poll_job(iam_client, job_id)
-    all_services: list[dict] = list(result.get("ServicesLastAccessed", []))
+    all_services: list[dict[str, Any]] = list(result.get("ServicesLastAccessed", []))
     marker = result.get("Marker")
     while result.get("IsTruncated") and marker:
-        result = iam_client.get_service_last_accessed_details(JobId=job_id, Marker=marker)
+        result = cast(
+            "dict[str, Any]",
+            iam_client.get_service_last_accessed_details(JobId=job_id, Marker=marker),
+        )
         all_services.extend(result.get("ServicesLastAccessed", []))
         marker = result.get("Marker")
     return _parse_services(all_services)
 
 
 def collect_access_advisor(
-    iam_client,
+    iam_client: IAMClient,
     principals: list[Principal],
     concurrency: int = 10,
 ) -> tuple[dict[str, list[ServiceLastAccessedRecord]], list[DataGap]]:

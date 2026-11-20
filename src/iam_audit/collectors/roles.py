@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from iam_audit.models import IAMRole
 
@@ -10,13 +10,16 @@ AWS_RESERVED_PATH_PREFIX = "/aws-reserved/"
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+    from datetime import datetime
+
+    from mypy_boto3_iam import IAMClient
 
 
-def _fetch_role_tags(iam_client, role_name: str) -> dict[str, str]:
+def _fetch_role_tags(iam_client: IAMClient, role_name: str) -> dict[str, str]:
     tags: dict[str, str] = {}
     marker = None
     while True:
-        kwargs: dict = {"RoleName": role_name}
+        kwargs: dict[str, Any] = {"RoleName": role_name}
         if marker:
             kwargs["Marker"] = marker
         resp = iam_client.list_role_tags(**kwargs)
@@ -28,14 +31,16 @@ def _fetch_role_tags(iam_client, role_name: str) -> dict[str, str]:
     return tags
 
 
-def _fetch_role_last_used(iam_client, role_name: str) -> tuple[object | None, str | None]:
+def _fetch_role_last_used(
+    iam_client: IAMClient, role_name: str
+) -> tuple[datetime | None, str | None]:
     resp = iam_client.get_role(RoleName=role_name)
     role_last_used = resp.get("Role", {}).get("RoleLastUsed", {})
     return role_last_used.get("LastUsedDate"), role_last_used.get("Region")
 
 
 def collect_roles(
-    iam_client,
+    iam_client: IAMClient,
     include_aws_managed: bool = False,
 ) -> Generator[IAMRole, None, None]:
     paginator = iam_client.get_paginator("list_roles")

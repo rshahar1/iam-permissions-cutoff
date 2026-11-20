@@ -12,7 +12,7 @@ class CorrelationFilter(logging.Filter):
         self.correlation_id = correlation_id
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.correlation_id = self.correlation_id  # type: ignore[attr-defined]
+        record.correlation_id = self.correlation_id
         return True
 
 
