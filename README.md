@@ -4,7 +4,7 @@ A CLI tool to audit AWS IAM roles and users for over-provisioning. It identifies
 
 ## Features
 
-- **Dormancy detection** — flags roles and users with no activity beyond a configurable threshold (default: 90 days), including entities that have never been used
+- **Dormancy detection** — flags roles and users with no activity beyond a configurable threshold (default: 90 days), including entities that have never been used (new principals get a grace period equal to the threshold, measured from creation)
 - **Permission analysis** — detects wildcard actions (`*`), wildcard resources (`*`), and broad service-level wildcards (e.g., `s3:*`) across inline, managed, and group policies. Notes the presence of Deny statements that may restrict effective permissions
 - **Unused permission analysis** — uses AWS Access Advisor (action-level granularity) to identify granted permissions that have never been exercised, with wildcard expansion via a bundled IAM actions map
 - **Consolidated reporting** — combines all findings into a single report in text (table), JSON, or **HTML** format
@@ -201,7 +201,7 @@ Self-contained static HTML file with:
 | Severity   | Criteria                                                                        |
 |------------|---------------------------------------------------------------------------------|
 | `CRITICAL` | All actions (`*` anywhere in `Action`) on all resources (`*` anywhere in `Resource`, or any `NotResource`) |
-| `HIGH`     | All actions on specific resources, full-service wildcard (e.g., `s3:*`), `Allow` + `NotAction` on all resources, more than 5 actions on all resources, principal never used or dormant > 2× threshold, or unused IAM/KMS/STS/Organizations/Secrets Manager permissions |
+| `HIGH`     | All actions on specific resources, full-service wildcard (e.g., `s3:*`), `Allow` + `NotAction` on all resources, more than 5 actions on all resources, principal dormant, or never used since creation, for > 2× threshold, or unused IAM/KMS/STS/Organizations/Secrets Manager permissions |
 | `MEDIUM`   | 2–5 specific actions on all resources, partial wildcards (e.g., `s3:Get*`), `Allow` + `NotAction` on specific resources, or most unused service permissions |
 | `LOW`      | Zero-policy entities, or one or two unused actions in a non-sensitive service |
 
@@ -239,7 +239,7 @@ mypy src
 python scripts/emulator_smoke.py [--keep-reports DIR]
 ```
 
-Starts a local [moto](https://github.com/getmoto/moto) IAM emulator, seeds one principal per known scenario, runs the real `iam-audit` CLI against it (default and `--include-aws-managed`) and fails (exit 1) if the findings differ from the expectations table in the script. It needs no AWS account or credentials and never contacts AWS: the environment is scrubbed of all `AWS_*` variables and pinned to the local emulator. Limits: moto does not emulate Access Advisor, so unused-permission checks are not covered, and freshly created principals show "never used" dormancy findings, which is expected.
+Starts a local [moto](https://github.com/getmoto/moto) IAM emulator, seeds one principal per known scenario, runs the real `iam-audit` CLI against it (default and `--include-aws-managed`) and fails (exit 1) if the findings differ from the expectations table in the script. It needs no AWS account or credentials and never contacts AWS: the environment is scrubbed of all `AWS_*` variables and pinned to the local emulator. Limits: moto does not emulate Access Advisor, so unused-permission checks are not covered, and freshly created principals must produce no dormancy findings (grace period), which the script asserts.
 
 ### Security audit
 
