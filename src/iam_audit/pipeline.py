@@ -23,6 +23,8 @@ from typing import TYPE_CHECKING
 
 from iam_audit.analyzers.dormancy import analyze_dormancy
 from iam_audit.analyzers.permissions import analyze_permissions
+from iam_audit.analyzers.trust import add_trust_arguments
+from iam_audit.analyzers.trust import run as run_trust
 from iam_audit.analyzers.unused import analyze_unused_permissions
 from iam_audit.collectors.access_advisor import collect_access_advisor
 
@@ -96,6 +98,7 @@ CHECKS: dict[str, Check] = {
         Check("dormancy", _run_dormancy),
         Check("permissions", _run_permissions, needs_policies=True),
         Check("unused", _run_unused, needs_policies=True),
+        Check("trust", run_trust, add_arguments=add_trust_arguments),
     )
 }
 
@@ -143,7 +146,7 @@ SUBCOMMANDS: tuple[Subcommand, ...] = (
         description="Analyze IAM policies for wildcard actions, broad resources, and\n"
         "unused permissions via AWS Access Advisor. Includes Deny-statement awareness.",
         epilog=_PERMISSIONS_EPILOG,
-        checks=("permissions", "unused"),
+        checks=("permissions", "unused", "trust"),
     ),
     Subcommand(
         name="report",
@@ -151,7 +154,7 @@ SUBCOMMANDS: tuple[Subcommand, ...] = (
         description="Run every check and produce a combined report.\n"
         "Supports text, JSON, and HTML output formats.",
         epilog=_REPORT_EPILOG,
-        checks=("dormancy", "permissions", "unused"),
+        checks=("dormancy", "permissions", "unused", "trust"),
     ),
 )
 

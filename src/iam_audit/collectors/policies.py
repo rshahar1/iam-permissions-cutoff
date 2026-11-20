@@ -34,6 +34,18 @@ def _as_list(value: object) -> list[str]:
     return [str(value)]
 
 
+def _normalize_principal(value: object) -> dict[str, list[str]] | None:
+    """Normalize a Principal/NotPrincipal element to ``{type: [values]}``.
+
+    The bare string ``"*"`` means every AWS principal, so it becomes ``{"AWS": ["*"]}``.
+    """
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        return {str(kind): _as_list(values) for kind, values in value.items()}
+    return {"AWS": _as_list(value)}
+
+
 def _parse_policy_document(doc: dict[str, Any]) -> PolicyDocument:
     """Parse a raw IAM policy document, including NotAction/NotResource elements."""
     version = doc.get("Version", "2012-10-17")
@@ -50,6 +62,8 @@ def _parse_policy_document(doc: dict[str, Any]) -> PolicyDocument:
                 conditions=stmt.get("Condition"),
                 not_actions=_as_list(stmt.get("NotAction")),
                 not_resources=_as_list(stmt.get("NotResource")),
+                principals=_normalize_principal(stmt.get("Principal")),
+                not_principals=_normalize_principal(stmt.get("NotPrincipal")),
             )
         )
     return PolicyDocument(version=version, statements=statements)
@@ -60,6 +74,11 @@ def _load_document(raw: object) -> dict[str, Any]:
     if isinstance(raw, str):
         raw = json.loads(urllib.parse.unquote(raw))
     return cast("dict[str, Any]", raw)
+
+
+def load_policy_document(raw: object) -> PolicyDocument:
+    """Parse a raw policy document (dict, or URL-encoded JSON string) into a model."""
+    return _parse_policy_document(_load_document(raw))
 
 
 def _fetch_inline_policies(iam_client: IAMClient, principal: Principal) -> list[InlinePolicy]:
