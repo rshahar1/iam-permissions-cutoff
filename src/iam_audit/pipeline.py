@@ -69,7 +69,7 @@ class Subcommand:
 
 
 def _run_dormancy(ctx: AuditContext) -> list[Finding]:
-    return analyze_dormancy(ctx.principals, threshold_days=ctx.options.days)
+    return analyze_dormancy(ctx.principals, threshold_days=ctx.options.days, now=ctx.now)
 
 
 def _run_permissions(ctx: AuditContext) -> list[Finding]:
