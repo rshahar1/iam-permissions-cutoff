@@ -211,7 +211,7 @@ def test_run_appends_collector_data_gaps_and_returns_no_findings() -> None:
 
 def test_credentials_subcommand_and_report_run_the_check() -> None:
     assert get_subcommand("credentials").checks == ("credentials",)
-    assert get_subcommand("report").checks[-1] == "credentials"
+    assert "credentials" in get_subcommand("report").checks
 
 
 def test_key_max_age_flag_defaults_to_90_and_is_parsed_on_every_subcommand() -> None:

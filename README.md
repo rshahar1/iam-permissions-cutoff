@@ -90,6 +90,7 @@ iam-audit <subcommand> [options]
 | `--output PATH`         | —       | Write output to file instead of stdout (required for HTML) |
 | `--concurrency N`       | `10`    | Max concurrent Access Advisor API requests                 |
 | `--key-max-age N`       | `90`    | Flag active access keys not rotated in N days (credential checks) |
+| `--trusted-accounts IDS` | —      | Comma-separated 12-digit account IDs whose role trust is expected (trust checks); repeatable |
 | `--version`             |         | Show version and exit                                      |
 
 ### Examples
@@ -253,6 +254,28 @@ Per-key rules produce one finding per key (`key_slot` 1 or 2 in the metadata).
 ```bash
 iam-audit credentials
 iam-audit credentials --key-max-age 60
+```
+
+### Trust policy checks
+
+The `permissions` and `report` subcommands also inspect each role's trust policy (`AssumeRolePolicyDocument`, already returned by `ListRoles`, so no extra API calls). Only `Allow` statements that grant `sts:AssumeRole`, `sts:AssumeRoleWithWebIdentity`, `sts:AssumeRoleWithSAML` (or `sts:*` / `*`) are examined, and service-linked and `/aws-reserved/` roles are skipped. One finding is emitted per statement per rule (category `trust_policy`).
+
+| Rule | Severity | Detects |
+|------|----------|---------|
+| `TRUST-001` | CRITICAL | Principal `*` (any AWS account) with no `aws:PrincipalOrgID`, `aws:PrincipalOrgPaths`, `aws:PrincipalAccount`, `aws:PrincipalArn`, `aws:SourceAccount`, `aws:SourceArn` or `aws:SourceOrgID` condition |
+| `TRUST-002` | HIGH | `Allow` with `NotPrincipal` (trusts everyone except those listed) |
+| `TRUST-003` | HIGH | Cross-account principal not on the trusted list and no `sts:ExternalId` condition |
+| `TRUST-004` | LOW | Cross-account principal not on the trusted list, with `sts:ExternalId` (verify the third party) |
+| `TRUST-005` | CRITICAL | GitHub Actions OIDC without a restrictive `token.actions.githubusercontent.com:sub` condition |
+| `TRUST-006` | MEDIUM | GitHub Actions OIDC with a valid `sub` but no `:aud` condition |
+| `TRUST-007` | HIGH | Other OIDC provider without a `<provider>:sub` condition |
+| `TRUST-008` | HIGH | Cognito identity pool trust without a `cognito-identity.amazonaws.com:aud` condition |
+| `TRUST-009` | MEDIUM | SAML provider without a `SAML:aud` condition |
+
+The audited account itself and any account passed to `--trusted-accounts` (comma-separated, repeatable) never trigger `TRUST-003`/`TRUST-004`.
+
+```bash
+iam-audit permissions --trusted-accounts 111122223333,444455556666
 ```
 
 ## Severity Ratings

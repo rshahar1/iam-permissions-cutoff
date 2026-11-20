@@ -15,6 +15,7 @@ class FindingCategory(enum.Enum):
     UNUSED_PERMISSION = "unused_permission"
     PRIVILEGE_ESCALATION = "privilege_escalation"
     CREDENTIAL = "credential"
+    TRUST_POLICY = "trust_policy"
 
     @property
     def display_name(self) -> str:
@@ -28,6 +29,7 @@ _CATEGORY_DISPLAY_NAMES: dict[FindingCategory, str] = {
     FindingCategory.UNUSED_PERMISSION: "Unused Permission Findings",
     FindingCategory.PRIVILEGE_ESCALATION: "Privilege Escalation Findings",
     FindingCategory.CREDENTIAL: "Credential Findings",
+    FindingCategory.TRUST_POLICY: "Trust Policy Findings",
 }
 
 
@@ -60,6 +62,8 @@ class PolicyStatement:
     conditions: dict | None = None  # type: ignore[type-arg]
     not_actions: list[str] = field(default_factory=list)
     not_resources: list[str] = field(default_factory=list)
+    principals: dict[str, list[str]] | None = None
+    not_principals: dict[str, list[str]] | None = None
 
 
 @dataclass(frozen=True)
@@ -109,6 +113,7 @@ class IAMRole(Principal):
     is_service_linked: bool = False
     is_service_role: bool = False
     is_aws_reserved: bool = False
+    trust_policy: PolicyDocument | None = None
 
     @property
     def last_activity(self) -> datetime | None:

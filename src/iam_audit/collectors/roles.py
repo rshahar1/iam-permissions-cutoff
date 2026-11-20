@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from iam_audit.collectors.policies import load_policy_document
 from iam_audit.models import IAMRole
 
 # IAM Identity Center (SSO) permission-set roles live here; they are managed in
@@ -13,6 +14,8 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     from mypy_boto3_iam import IAMClient
+
+    from iam_audit.models import PolicyDocument
 
 
 def _fetch_role_tags(iam_client: IAMClient, role_name: str) -> dict[str, str]:
@@ -37,6 +40,12 @@ def _fetch_role_last_used(
     resp = iam_client.get_role(RoleName=role_name)
     role_last_used = resp.get("Role", {}).get("RoleLastUsed", {})
     return role_last_used.get("LastUsedDate"), role_last_used.get("Region")
+
+
+def _parse_trust_policy(role: Any) -> PolicyDocument | None:
+    """Parse the ``AssumeRolePolicyDocument`` that ``list_roles`` already returns."""
+    raw = role.get("AssumeRolePolicyDocument")
+    return load_policy_document(raw) if raw else None
 
 
 def collect_roles(
@@ -72,4 +81,5 @@ def collect_roles(
                 is_aws_reserved=is_aws_reserved,
                 is_aws_managed=is_aws_managed,
                 tags=tags,
+                trust_policy=_parse_trust_policy(role),
             )
