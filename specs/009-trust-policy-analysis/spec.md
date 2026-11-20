@@ -21,7 +21,7 @@ The audit analyzed what roles can do but never who can assume them. A role whose
 
 - **FR-001**: `PolicyStatement` MUST gain `principals` and `not_principals` (`dict[str, list[str]] | None`); the parser normalizes `"*"` to `{"AWS": ["*"]}` and string values to lists.
 - **FR-002**: `IAMRole.trust_policy` MUST be filled from `list_roles` (`AssumeRolePolicyDocument`) with no extra API calls; string documents are URL-decoded.
-- **FR-003**: Only roles are analyzed; service-linked and `/aws-reserved/` roles are skipped. Only `Allow` statements granting `sts:AssumeRole`, `sts:AssumeRoleWithWebIdentity`, `sts:AssumeRoleWithSAML`, `sts:*` or `*` are examined; condition keys match case-insensitively across all operators.
+- **FR-003**: Only roles are analyzed; service-linked and `/aws-reserved/` roles are skipped. Only `Allow` statements granting `sts:AssumeRole`, `sts:AssumeRoleWithWebIdentity`, `sts:AssumeRoleWithSAML`, `sts:*` or `*` are examined; condition keys match case-insensitively, and only constraining operators count: negated operators (`StringNotEquals`, `ArnNotLike`, ...), `Null` and `...IfExists` variants never satisfy a required or restricting condition, because they pass when the key is absent or different.
 - **FR-004**: Rules `TRUST-001`..`TRUST-009` are defined as a data table in `analyzers/trust.py`; one finding per statement per rule with metadata `rule_id`, `statement_sid`, `principal`, `condition_keys`.
 - **FR-005**: The check runs in `permissions` and `report`; `FindingCategory.TRUST_POLICY` has display name "Trust Policy Findings".
 - **FR-006**: JSON output stays additive (`schema_version` 1.0.0), see `contracts/json-schema-delta.md`.

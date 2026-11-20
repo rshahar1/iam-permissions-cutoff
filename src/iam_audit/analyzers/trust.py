@@ -13,7 +13,7 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from iam_audit.models import Finding, FindingCategory, IAMRole, PolicyStatement, Severity
 
@@ -65,11 +65,25 @@ class TrustRule:
     detect: Detector
 
 
-def normalize_conditions(conditions: dict | None) -> dict[str, list[str]]:  # type: ignore[type-arg]
-    """Flatten ``{operator: {key: value}}`` to ``{lowercase key: [values]}`` across operators."""
+def is_constraining_operator(operator: str) -> bool:
+    """True if a condition operator requires the key to be present and to match.
+
+    Negated operators (``StringNotEquals``, ``ArnNotLike``, ...), ``Null`` and
+    ``...IfExists`` variants (which pass when the key is missing) do not limit who
+    can assume the role, so they never count as a restricting condition.
+    """
+    name = operator.split(":")[-1].lower()
+    return "not" not in name and name != "null" and not name.endswith("ifexists")
+
+
+def normalize_conditions(conditions: dict[str, Any] | None) -> dict[str, list[str]]:
+    """Flatten ``{operator: {key: value}}`` to ``{lowercase key: [values]}``.
+
+    Only constraining operators are kept (see :func:`is_constraining_operator`).
+    """
     result: dict[str, list[str]] = {}
-    for operator_block in (conditions or {}).values():
-        if not isinstance(operator_block, dict):
+    for operator, operator_block in (conditions or {}).items():
+        if not isinstance(operator_block, dict) or not is_constraining_operator(str(operator)):
             continue
         for key, value in operator_block.items():
             values = value if isinstance(value, list) else [value]
