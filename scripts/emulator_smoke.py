@@ -17,7 +17,8 @@ emulator, no config/credentials files), so real AWS can never be contacted.
 
 Limitations: moto does not implement Access Advisor
 (``generate_service_last_accessed_details``), so unused-permission analysis is not
-exercised. Dormancy findings are not asserted (fresh principals are "never used").
+exercised. Every seeded principal is brand new, so the default run must contain no
+dormancy findings (new principals get a grace period equal to the dormancy threshold).
 """
 
 from __future__ import annotations
@@ -198,7 +199,10 @@ def check_scope(default: dict[str, Any], managed: dict[str, Any]) -> list[tuple[
     """Evaluate principal counts and AWS-managed inclusion behaviour."""
     names = {f["principal_name"] for f in default["findings"]}
     sso = top_permission(managed["findings"], SSO_ROLE)
+    dormancy = [f for f in default["findings"] if f["category"] == "dormancy"]
     return [
+        (f"default: no dormancy findings for brand-new principals (got {len(dormancy)})",
+         not dormancy),
         (f"default: principals_scanned == {DEFAULT_SCANNED} "
          f"(got {default['summary']['principals_scanned']})",
          default["summary"]["principals_scanned"] == DEFAULT_SCANNED),

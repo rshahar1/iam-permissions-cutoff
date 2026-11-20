@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from iam_audit.analyzers import credentials
+from iam_audit.analyzers import credentials, privesc
 from iam_audit.analyzers.dormancy import analyze_dormancy
 from iam_audit.analyzers.permissions import analyze_permissions
 from iam_audit.analyzers.unused import analyze_unused_permissions
@@ -70,7 +70,7 @@ class Subcommand:
 
 
 def _run_dormancy(ctx: AuditContext) -> list[Finding]:
-    return analyze_dormancy(ctx.principals, threshold_days=ctx.options.days)
+    return analyze_dormancy(ctx.principals, threshold_days=ctx.options.days, now=ctx.now)
 
 
 def _run_permissions(ctx: AuditContext) -> list[Finding]:
@@ -97,6 +97,7 @@ CHECKS: dict[str, Check] = {
         Check("dormancy", _run_dormancy),
         Check("permissions", _run_permissions, needs_policies=True),
         Check("unused", _run_unused, needs_policies=True),
+        Check("privesc", privesc.run, needs_policies=True),
         Check("credentials", credentials.run, add_arguments=credentials.add_arguments),
     )
 }
@@ -154,7 +155,7 @@ SUBCOMMANDS: tuple[Subcommand, ...] = (
         description="Analyze IAM policies for wildcard actions, broad resources, and\n"
         "unused permissions via AWS Access Advisor. Includes Deny-statement awareness.",
         epilog=_PERMISSIONS_EPILOG,
-        checks=("permissions", "unused"),
+        checks=("permissions", "unused", "privesc"),
     ),
     Subcommand(
         name="report",
@@ -162,7 +163,7 @@ SUBCOMMANDS: tuple[Subcommand, ...] = (
         description="Run every check and produce a combined report.\n"
         "Supports text, JSON, and HTML output formats.",
         epilog=_REPORT_EPILOG,
-        checks=("dormancy", "permissions", "unused", "credentials"),
+        checks=("dormancy", "permissions", "unused", "privesc", "credentials"),
     ),
     Subcommand(
         name="credentials",

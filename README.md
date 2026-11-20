@@ -4,7 +4,7 @@ A CLI tool to audit AWS IAM roles and users for over-provisioning. It identifies
 
 ## Features
 
-- **Dormancy detection** — flags roles and users with no activity beyond a configurable threshold (default: 90 days), including entities that have never been used
+- **Dormancy detection** — flags roles and users with no activity beyond a configurable threshold (default: 90 days), including entities that have never been used (new principals get a grace period equal to the threshold, measured from creation)
 - **Permission analysis** — detects wildcard actions (`*`), wildcard resources (`*`), and broad service-level wildcards (e.g., `s3:*`) across inline, managed, and group policies. Notes the presence of Deny statements that may restrict effective permissions
 - **Unused permission analysis** — uses AWS Access Advisor (action-level granularity) to identify granted permissions that have never been exercised, with wildcard expansion via a bundled IAM actions map
 - **Consolidated reporting** — combines all findings into a single report in text (table), JSON, or **HTML** format
@@ -200,6 +200,39 @@ Self-contained static HTML file with:
 | `1`  | Audit complete — findings present                               |
 | `2`  | Tool error (credentials, permissions, invalid arguments)        |
 
+### Privilege-escalation checks
+
+The `permissions` and `report` subcommands also flag principals whose effective policies (managed, inline and group) let them escalate their own privileges. A rule fires only when **all** of its required actions are granted by an `Allow` statement that applies to all resources (`"*"` in `Resource`, or any `NotResource`), through `Action` patterns (wildcards included) or `NotAction`. An unconditional `Deny` listing `"*"` as a resource suppresses the matching actions. Principals with full admin access are skipped because they are already reported as `CRITICAL` permission findings. Findings use the category `privilege_escalation`.
+
+| Rule | Severity | Required actions |
+|------|----------|------------------|
+| `PE-001` | CRITICAL | `iam:CreatePolicyVersion` |
+| `PE-002` | HIGH | `iam:SetDefaultPolicyVersion` |
+| `PE-003` | CRITICAL | `iam:AttachUserPolicy` |
+| `PE-004` | CRITICAL | `iam:AttachGroupPolicy` |
+| `PE-005` | CRITICAL | `iam:AttachRolePolicy` |
+| `PE-006` | CRITICAL | `iam:PutUserPolicy` |
+| `PE-007` | CRITICAL | `iam:PutGroupPolicy` |
+| `PE-008` | CRITICAL | `iam:PutRolePolicy` |
+| `PE-009` | HIGH | `iam:AddUserToGroup` |
+| `PE-010` | CRITICAL | `iam:UpdateAssumeRolePolicy` |
+| `PE-011` | HIGH | `iam:CreateAccessKey` |
+| `PE-012` | HIGH | `iam:CreateLoginProfile` |
+| `PE-013` | HIGH | `iam:UpdateLoginProfile` |
+| `PE-014` | HIGH | `iam:PassRole` + `ec2:RunInstances` |
+| `PE-015` | HIGH | `iam:PassRole` + `lambda:CreateFunction` |
+| `PE-016` | HIGH | `lambda:UpdateFunctionCode` |
+| `PE-017` | HIGH | `iam:PassRole` + `cloudformation:CreateStack` |
+| `PE-018` | HIGH | `iam:PassRole` + `codebuild:CreateProject` |
+| `PE-019` | HIGH | `iam:PassRole` + `ecs:RegisterTaskDefinition` + `ecs:RunTask` |
+| `PE-020` | HIGH | `iam:PassRole` + `glue:CreateDevEndpoint` |
+| `PE-021` | HIGH | `glue:UpdateDevEndpoint` |
+| `PE-022` | HIGH | `ssm:SendCommand` |
+| `PE-023` | HIGH | `ssm:StartSession` |
+| `PE-024` | MEDIUM | `sts:AssumeRole` |
+
+**Limitation:** only grants on all resources are evaluated. Grants scoped to specific resources (for example `iam:PassRole` on one role ARN) are intentionally ignored to avoid noise, and permission boundaries, SCPs and conditions on `Allow` statements are not evaluated.
+
 ### Credential checks
 
 The `credentials` subcommand (also part of `report`) reads the IAM credential report and emits `credential` findings. It needs `iam:GenerateCredentialReport` and `iam:GetCredentialReport`. The report covers users that pass your filters; the root account is included only when no `--path-prefix`, `--name` or `--tag` filter is set.
@@ -227,7 +260,7 @@ iam-audit credentials --key-max-age 60
 | Severity   | Criteria                                                                        |
 |------------|---------------------------------------------------------------------------------|
 | `CRITICAL` | All actions (`*` anywhere in `Action`) on all resources (`*` anywhere in `Resource`, or any `NotResource`) |
-| `HIGH`     | All actions on specific resources, full-service wildcard (e.g., `s3:*`), `Allow` + `NotAction` on all resources, more than 5 actions on all resources, principal never used or dormant > 2× threshold, or unused IAM/KMS/STS/Organizations/Secrets Manager permissions |
+| `HIGH`     | All actions on specific resources, full-service wildcard (e.g., `s3:*`), `Allow` + `NotAction` on all resources, more than 5 actions on all resources, principal dormant, or never used since creation, for > 2× threshold, or unused IAM/KMS/STS/Organizations/Secrets Manager permissions |
 | `MEDIUM`   | 2–5 specific actions on all resources, partial wildcards (e.g., `s3:Get*`), `Allow` + `NotAction` on specific resources, or most unused service permissions |
 | `LOW`      | Zero-policy entities, or one or two unused actions in a non-sensitive service |
 
@@ -265,7 +298,7 @@ mypy src
 python scripts/emulator_smoke.py [--keep-reports DIR]
 ```
 
-Starts a local [moto](https://github.com/getmoto/moto) IAM emulator, seeds one principal per known scenario, runs the real `iam-audit` CLI against it (default and `--include-aws-managed`) and fails (exit 1) if the findings differ from the expectations table in the script. It needs no AWS account or credentials and never contacts AWS: the environment is scrubbed of all `AWS_*` variables and pinned to the local emulator. Limits: moto does not emulate Access Advisor, so unused-permission checks are not covered, and freshly created principals show "never used" dormancy findings, which is expected.
+Starts a local [moto](https://github.com/getmoto/moto) IAM emulator, seeds one principal per known scenario, runs the real `iam-audit` CLI against it (default and `--include-aws-managed`) and fails (exit 1) if the findings differ from the expectations table in the script. It needs no AWS account or credentials and never contacts AWS: the environment is scrubbed of all `AWS_*` variables and pinned to the local emulator. Limits: moto does not emulate Access Advisor, so unused-permission checks are not covered, and freshly created principals must produce no dormancy findings (grace period), which the script asserts.
 
 ### Security audit
 
