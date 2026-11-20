@@ -147,10 +147,14 @@ Adding a new check (documented in the `pipeline.py` module docstring; reporters 
 - Privilege-escalation checks only evaluate grants on all resources; permission boundaries, SCPs and Allow-statement
   conditions are not evaluated (documented limitation).
 - `examples/` and `docs/images/` are generated from the smoke-test emulator account; regenerate them together.
+- Branch rulesets on `main` require the CI check names `test (3.12)`, `test (3.13)`, `typecheck`, `audit` and `smoke`.
+  Renaming a job in `ci.yml` needs the same change in `specs/017-public-release-hardening/contracts/ruleset-ci-gate.json`
+  and the live ruleset, or every PR blocks on a check that never reports.
 
 ## Active Technologies
 - Python 3.12+ with boto3 (AWS SDK); everything else from the stdlib. Dev: pytest, pytest-cov, moto, ruff, mypy, boto3-stubs, pip-audit.
 
 ## Recent Changes
+- 017-public-release-hardening: LICENSE (MIT), SECURITY.md, CONTRIBUTING.md, CODEOWNERS, PR/issue templates, Dependabot; ruleset definitions and a post-publication settings runbook.
 - 013-readme-example-images: README shows real text/HTML report images; examples/ and docs/images/ regenerated from the emulator.
 - 012-smoke-new-checks: emulator smoke test extended to the trust-policy, privilege-escalation and credential-report checks.

@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest an improvement or a new check
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Dormancy
+        - Permissions / wildcards
+        - Unused permissions
+        - Privilege escalation
+        - Credentials
+        - Trust policies
+        - Reporting / output
+        - CLI
+        - Other
+  - type: checkboxes
+    id: read-only
+    attributes:
+      label: Read-only
+      options:
+        - label: This proposal keeps the tool read-only (no mutating AWS calls).
+          required: true

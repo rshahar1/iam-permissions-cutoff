@@ -1,5 +1,8 @@
 # iam-audit
 
+[![CI](https://github.com/rshahar1/iam-permissions-cutoff/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rshahar1/iam-permissions-cutoff/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A CLI tool to audit AWS IAM roles and users for over-provisioning. It identifies dormant principals, overly permissive policies, and unused permissions — helping teams achieve a least-privilege security posture without manual AWS console work.
 
 ## Features
@@ -370,6 +373,18 @@ src/iam_audit/
 - **Deny statements** — noted in findings metadata but do not alter severity ratings (effective permissions may be narrower than reported).
 - **Read-only** — the tool never modifies, deletes, or remediates any AWS resource.
 
+## Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, the checks every pull
+request must pass and the project's security rules. Every pull request runs the full CI suite and is reviewed by the
+maintainer before it is merged.
+
+## Security
+
+Please do not report vulnerabilities in public issues. Use
+[private vulnerability reporting](https://github.com/rshahar1/iam-permissions-cutoff/security/advisories/new) as
+described in [SECURITY.md](SECURITY.md).
+
 ## License
 
-This project is provided as-is for internal use.
+Released under the [MIT License](LICENSE).
