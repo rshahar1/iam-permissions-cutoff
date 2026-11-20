@@ -1,0 +1,43 @@
+=== IAM Audit Results ===
+Principals scanned: 87
+Findings: 15
+
+--- Dormancy Findings ---
+CRITICAL  user  intern-2024                               User has never logged in
+                Recommendation: Delete this unused user account.
+CRITICAL  role  legacy-deploy-role                        Role has never been assumed
+                Recommendation: Delete this unused role — it serves no purpose and increases attack surface.
+HIGH      role  ci-jenkins-old                            Role unused for 245 days
+                Recommendation: Delete this dormant role or investigate if it is still needed.
+HIGH      user  svc-monitoring                            User inactive for 180 days
+                Recommendation: Disable access keys and delete this user if no longer needed.
+MEDIUM    role  data-pipeline-staging                     Role unused for 95 days
+                Recommendation: Verify if the staging pipeline is still active; delete if decommissioned.
+
+--- Permission Findings ---
+CRITICAL  role  admin-emergency                           Full administrator access: Action:* Resource:*
+                Recommendation: Scope actions and resources to the minimum required. Replace with service-specific policies.
+CRITICAL  user  dev-lead                                  Full administrator access: Action:* Resource:*
+                Recommendation: Replace AdministratorAccess with scoped policies for the required services.
+HIGH      role  backend-api                               Full-service wildcard: s3:*
+                Recommendation: Restrict to specific S3 buckets and actions (e.g., s3:GetObject, s3:PutObject on the application bucket).
+HIGH      role  lambda-processor                          Full-service wildcard: dynamodb:*
+                Recommendation: Restrict to specific tables and actions (e.g., dynamodb:GetItem, dynamodb:PutItem).
+MEDIUM    role  ecs-task-role                             Wildcard resource with specific actions
+                Recommendation: Restrict resource ARNs to the specific VPC, subnets, or instances required.
+LOW       role  orphan-role                               Role has zero attached or inline policies
+                Recommendation: Review and attach a policy or delete this entity.
+
+--- Unused Permission Findings ---
+HIGH      role  ci-deploy                                 Unused IAM service permissions
+                Recommendation: Remove unused IAM actions: iam:CreateRole, iam:DeleteRole, iam:AttachRolePolicy. Keep: iam:PassRole.
+MEDIUM    role  backend-api                               Unused S3 actions detected
+                Recommendation: Replace s3:* with specific actions: s3:GetObject, s3:ListBucket.
+MEDIUM    role  lambda-processor                          Unused CloudWatch Logs permissions
+                Recommendation: Remove CloudWatch Logs access if this Lambda does not write logs through this role.
+LOW       user  readonly-analyst                          Unused read-only Redshift access
+                Recommendation: Remove Redshift read access if no longer needed for analytics.
+
+--- Data Gaps ---
+arn:aws:iam::123456789012:role/new-feature-flag: Newly created (less than 24 hours old)
+arn:aws:iam::123456789012:role/batch-nightly: Access Advisor API timed out after 10 minutes
