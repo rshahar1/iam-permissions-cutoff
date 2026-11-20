@@ -1,0 +1,52 @@
+name: Bug report
+description: Report something that does not work as expected
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not paste real AWS account IDs, ARNs, principal names or credentials.** Redact them (use `123456789012`).
+        Report security vulnerabilities privately as described in [SECURITY.md](https://github.com/rshahar1/iam-permissions-cutoff/blob/main/SECURITY.md), not here.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command run
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: iam-audit version or commit
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+  - type: textarea
+    id: logs
+    attributes:
+      label: Redacted output or logs
+      render: shell
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
