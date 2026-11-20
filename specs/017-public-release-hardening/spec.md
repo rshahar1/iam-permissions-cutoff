@@ -2,7 +2,7 @@
 
 **Feature Branch**: `017-public-release-hardening`
 **Created**: 2026-11-20
-**Status**: Implemented (repository files); settings pending until the owner makes the repository public
+**Status**: Implemented; repository public and all runbook settings applied on 2026-11-20
 **Input**: User description: "Prepare the repository to become public on GitHub Free so outside users can use and contribute; every PR must pass CI and be reviewed by the owner only."
 
 ## User Scenarios & Testing *(mandatory)*

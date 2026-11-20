@@ -22,4 +22,4 @@
 
 ## After publication (owner)
 
-- [ ] T012 Owner makes the repository public, then the runbook steps 1-5 are applied and verified
+- [x] T012 Owner makes the repository public, then the runbook steps 1-5 are applied and verified (2026-11-20; rulesets `main: CI gate` and `main: owner review gate` active)
