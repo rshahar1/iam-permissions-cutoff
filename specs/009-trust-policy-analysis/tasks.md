@@ -9,4 +9,4 @@
 - [x] T007 README: "Trust policy checks" section and `--trusted-accounts` option
 - [x] T008 Document the JSON schema delta in `contracts/json-schema-delta.md`
 - [x] T009 Run ruff, mypy (strict), pytest and the emulator smoke test
-- [ ] T010 Verify CI passes on the pull request
+- [x] T010 Verify CI passes on the pull request — all 5 checks green on PR #8 (c803379, merged with 008, 010, 011), 2026-11-20
