@@ -58,6 +58,8 @@ iam:GetServiceLastAccessedDetails
 sts:GetCallerIdentity
 ```
 
+The credential checks (`credentials` subcommand and `report`) additionally need `iam:GenerateCredentialReport` and `iam:GetCredentialReport`. If they are denied, the audit continues and records a data gap instead of credential findings.
+
 The tool is entirely read-only and requires no write permissions.
 
 ## Usage
@@ -72,7 +74,8 @@ iam-audit <subcommand> [options]
 |---------------|--------------------------------------------------------------------|
 | `dormancy`    | Identify principals with no recent activity                        |
 | `permissions` | Detect overly permissive policies and unused permission grants     |
-| `report`      | Generate a consolidated audit report (dormancy + permissions)      |
+| `credentials` | Audit root, MFA, access key and password hygiene                   |
+| `report`      | Generate a consolidated audit report (all checks)                  |
 
 ### Options
 
@@ -86,6 +89,7 @@ iam-audit <subcommand> [options]
 | `--format text\|json\|html` | `text` | Output format                                          |
 | `--output PATH`         | —       | Write output to file instead of stdout (required for HTML) |
 | `--concurrency N`       | `10`    | Max concurrent Access Advisor API requests                 |
+| `--key-max-age N`       | `90`    | Flag active access keys not rotated in N days (credential checks) |
 | `--version`             |         | Show version and exit                                      |
 
 ### Examples
@@ -196,6 +200,28 @@ Self-contained static HTML file with:
 | `1`  | Audit complete — findings present                               |
 | `2`  | Tool error (credentials, permissions, invalid arguments)        |
 
+### Credential checks
+
+The `credentials` subcommand (also part of `report`) reads the IAM credential report and emits `credential` findings. It needs `iam:GenerateCredentialReport` and `iam:GetCredentialReport`. The report covers users that pass your filters; the root account is included only when no `--path-prefix`, `--name` or `--tag` filter is set.
+
+| Rule       | Severity | Condition |
+|------------|----------|-----------|
+| `CRED-001` | CRITICAL | Root account has an active access key |
+| `CRED-002` | CRITICAL | Root account has no MFA device |
+| `CRED-003` | MEDIUM   | Root password used within the last `--days` days |
+| `CRED-004` | HIGH     | User has a console password but no MFA |
+| `CRED-005` | MEDIUM   | Active access key not rotated within `--key-max-age` days (default 90) |
+| `CRED-006` | MEDIUM   | Active access key never used and older than `--days` days |
+| `CRED-007` | LOW      | User has two active access keys |
+| `CRED-008` | MEDIUM   | Console password never used and user older than `--days` days |
+
+Per-key rules produce one finding per key (`key_slot` 1 or 2 in the metadata).
+
+```bash
+iam-audit credentials
+iam-audit credentials --key-max-age 60
+```
+
 ## Severity Ratings
 
 | Severity   | Criteria                                                                        |
@@ -261,11 +287,13 @@ src/iam_audit/
 ├── collectors/
 │   ├── roles.py           # IAM role enumeration (paginated, get_role for accurate RoleLastUsed)
 │   ├── users.py           # IAM user enumeration (paginated, access key last used)
+│   ├── credential_report.py  # IAM credential report generation and CSV parsing
 │   ├── policies.py        # Policy document collection per principal (inline/managed/group)
 │   └── access_advisor.py  # Concurrent Access Advisor collection (ThreadPoolExecutor)
 ├── analyzers/
 │   ├── dormancy.py        # Last-activity threshold analysis
 │   ├── permissions.py     # Wildcard/broad policy detection with Deny awareness
+│   ├── credentials.py     # Root, MFA, access key and password hygiene rules
 │   └── unused.py          # Unused permission detection via Access Advisor + wildcard expansion
 ├── reporters/
 │   ├── text.py            # Human-readable table output
