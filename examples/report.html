@@ -78,44 +78,36 @@
     <div class="meta">
       Account: 123456789012
       &middot; Threshold: 90 days
-      &middot; 2026-03-10 14:32:00 UTC
+      &middot; 2026-11-20 16:51:40 UTC
     </div>
     <div class="badges">
-  <span class="badge badge-total">Total: 15</span>
+  <span class="badge badge-total">Total: 22</span>
   <span class="badge badge-critical">Critical: 4</span>
-  <span class="badge badge-high">High: 5</span>
-  <span class="badge badge-medium">Medium: 4</span>
-  <span class="badge badge-low">Low: 2</span>
-  <span class="badge badge-category">Dormancy Findings: 5</span>
-  <span class="badge badge-category">Permission Findings: 6</span>
+  <span class="badge badge-high">High: 12</span>
+  <span class="badge badge-medium">Medium: 5</span>
+  <span class="badge badge-low">Low: 1</span>
+  <span class="badge badge-category">Dormancy Findings: 0</span>
+  <span class="badge badge-category">Permission Findings: 8</span>
   <span class="badge badge-category">Unused Permission Findings: 4</span>
+  <span class="badge badge-category">Privilege Escalation Findings: 7</span>
+  <span class="badge badge-category">Credential Findings: 1</span>
+  <span class="badge badge-category">Trust Policy Findings: 2</span>
 </div>
   </header>
   <main>
     <details>
-  <summary>Dormancy Findings (5)</summary>
+  <summary>Permission Findings (8)</summary>
   <table>
     <thead><tr><th>Principal</th><th>Severity</th><th>Title</th><th>Recommendation</th></tr></thead>
     <tbody>
-      <tr><td><strong>intern-2024</strong><br><span class="principal-arn">arn:aws:iam::123456789012:user/intern-2024</span></td><td><span class="sev-badge" style="background:#dc3545">Critical</span></td><td>User has never logged in</td><td>Delete this unused user account.</td></tr>
-      <tr><td><strong>legacy-deploy-role</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/legacy-deploy-role</span></td><td><span class="sev-badge" style="background:#dc3545">Critical</span></td><td>Role has never been assumed</td><td>Delete this unused role — it serves no purpose and increases attack surface.</td></tr>
-      <tr><td><strong>ci-jenkins-old</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/ci-jenkins-old</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Role unused for 245 days</td><td>Delete this dormant role or investigate if it is still needed.</td></tr>
-      <tr><td><strong>svc-monitoring</strong><br><span class="principal-arn">arn:aws:iam::123456789012:user/svc-monitoring</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>User inactive for 180 days</td><td>Disable access keys and delete this user if no longer needed.</td></tr>
-      <tr><td><strong>data-pipeline-staging</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/data-pipeline-staging</span></td><td><span class="sev-badge sev-medium" style="background:#ffc107">Medium</span></td><td>Role unused for 95 days</td><td>Verify if the staging pipeline is still active; delete if decommissioned.</td></tr>
-    </tbody>
-  </table>
-</details>
-<details>
-  <summary>Permission Findings (6)</summary>
-  <table>
-    <thead><tr><th>Principal</th><th>Severity</th><th>Title</th><th>Recommendation</th></tr></thead>
-    <tbody>
-      <tr><td><strong>admin-emergency</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/admin-emergency</span></td><td><span class="sev-badge" style="background:#dc3545">Critical</span></td><td>Full administrator access: Action:* Resource:*</td><td>Scope actions and resources to the minimum required. Replace with service-specific policies.</td></tr>
-      <tr><td><strong>dev-lead</strong><br><span class="principal-arn">arn:aws:iam::123456789012:user/dev-lead</span></td><td><span class="sev-badge" style="background:#dc3545">Critical</span></td><td>Full administrator access: Action:* Resource:*</td><td>Replace AdministratorAccess with scoped policies for the required services.</td></tr>
-      <tr><td><strong>backend-api</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/backend-api</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Full-service wildcard: s3:*</td><td>Restrict to specific S3 buckets and actions (e.g., s3:GetObject, s3:PutObject on the application bucket).</td></tr>
-      <tr><td><strong>lambda-processor</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/lambda-processor</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Full-service wildcard: dynamodb:*</td><td>Restrict to specific tables and actions (e.g., dynamodb:GetItem, dynamodb:PutItem).</td></tr>
-      <tr><td><strong>ecs-task-role</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/ecs-task-role</span></td><td><span class="sev-badge sev-medium" style="background:#ffc107">Medium</span></td><td>Wildcard resource with specific actions</td><td>Restrict resource ARNs to the specific VPC, subnets, or instances required.</td></tr>
-      <tr><td><strong>orphan-role</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/orphan-role</span></td><td><span class="sev-badge" style="background:#0d6efd">Low</span></td><td>Role has zero attached or inline policies</td><td>Review and attach a policy or delete this entity.</td></tr>
+      <tr><td><strong>ci-admin</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/ci-admin</span></td><td><span class="sev-badge" style="background:#dc3545">Critical</span></td><td>Overly permissive policy: AdministratorAccess</td><td>Remove this policy or replace with least-privilege permissions. Action &#x27;*&#x27; and Resource &#x27;*&#x27; grants full access. This is an AWS-managed policy and cannot be edited: detach it and attach a customer-managed least-privilege policy instead.</td></tr>
+      <tr><td><strong>mixed-star</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/mixed-star</span></td><td><span class="sev-badge" style="background:#dc3545">Critical</span></td><td>Overly permissive policy: mixed-star-inline</td><td>Remove this policy or replace with least-privilege permissions. Action &#x27;*&#x27; and Resource &#x27;*&#x27; grants full access.</td></tr>
+      <tr><td><strong>bucket-star</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/bucket-star</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Overly permissive policy: bucket-star-inline</td><td>Restrict permissions: use specific actions instead of service wildcards (e.g. s3:*), and scope resources to specific ARNs where possible.</td></tr>
+      <tr><td><strong>power-notaction</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/power-notaction</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Overly permissive policy: power-notaction-inline</td><td>Replace NotAction with an explicit allow-list of the actions this principal needs: NotAction grants every action not listed, including future AWS actions.</td></tr>
+      <tr><td><strong>deploy-bot</strong><br><span class="principal-arn">arn:aws:iam::123456789012:user/deploy-bot</span></td><td><span class="sev-badge sev-medium" style="background:#ffc107">Medium</span></td><td>Overly permissive policy: deployers-read</td><td>Review and narrow permissions: prefer specific actions over wildcards and restrict resources to required ARNs.</td></tr>
+      <tr><td><strong>mixed-resource</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/mixed-resource</span></td><td><span class="sev-badge sev-medium" style="background:#ffc107">Medium</span></td><td>Overly permissive policy: mixed-resource-inline</td><td>Review and narrow permissions: prefer specific actions over wildcards and restrict resources to required ARNs.</td></tr>
+      <tr><td><strong>passrole-runner</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/passrole-runner</span></td><td><span class="sev-badge sev-medium" style="background:#ffc107">Medium</span></td><td>Overly permissive policy: passrole-runner-inline</td><td>Review and narrow permissions: prefer specific actions over wildcards and restrict resources to required ARNs.</td></tr>
+      <tr><td><strong>console-no-mfa</strong><br><span class="principal-arn">arn:aws:iam::123456789012:user/console-no-mfa</span></td><td><span class="sev-badge" style="background:#0d6efd">Low</span></td><td>Principal has no policies attached</td><td>Attach appropriate policies or add inline policies if this principal should have access.</td></tr>
     </tbody>
   </table>
 </details>
@@ -124,20 +116,44 @@
   <table>
     <thead><tr><th>Principal</th><th>Severity</th><th>Title</th><th>Recommendation</th></tr></thead>
     <tbody>
-      <tr><td><strong>ci-deploy</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/ci-deploy</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Unused IAM service permissions</td><td>Remove unused IAM actions: iam:CreateRole, iam:DeleteRole, iam:AttachRolePolicy. Keep: iam:PassRole.</td></tr>
-      <tr><td><strong>backend-api</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/backend-api</span></td><td><span class="sev-badge sev-medium" style="background:#ffc107">Medium</span></td><td>Unused S3 actions detected</td><td>Replace s3:* with specific actions: s3:GetObject, s3:ListBucket.</td></tr>
-      <tr><td><strong>lambda-processor</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/lambda-processor</span></td><td><span class="sev-badge sev-medium" style="background:#ffc107">Medium</span></td><td>Unused CloudWatch Logs permissions</td><td>Remove CloudWatch Logs access if this Lambda does not write logs through this role.</td></tr>
-      <tr><td><strong>readonly-analyst</strong><br><span class="principal-arn">arn:aws:iam::123456789012:user/readonly-analyst</span></td><td><span class="sev-badge" style="background:#0d6efd">Low</span></td><td>Unused read-only Redshift access</td><td>Remove Redshift read access if no longer needed for analytics.</td></tr>
+      <tr><td><strong>mixed-resource</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/mixed-resource</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Unused iam permissions: CreateAccessKey, PassRole</td><td>Remove unused iam permissions from policies.</td></tr>
+      <tr><td><strong>power-notaction</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/power-notaction</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Unused kms permissions</td><td>Remove unused kms permissions from policies.</td></tr>
+      <tr><td><strong>power-notaction</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/power-notaction</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Unused secretsmanager permissions</td><td>Remove unused secretsmanager permissions from policies.</td></tr>
+      <tr><td><strong>deploy-bot</strong><br><span class="principal-arn">arn:aws:iam::123456789012:user/deploy-bot</span></td><td><span class="sev-badge sev-medium" style="background:#ffc107">Medium</span></td><td>Unused s3 permissions: GetBucketPolicy, GetBucketTagging, GetBucketVersioning</td><td>Remove unused s3 permissions from policies.</td></tr>
     </tbody>
   </table>
 </details>
 <details>
-  <summary>Data Gaps (2)</summary>
+  <summary>Privilege Escalation Findings (7)</summary>
   <table>
-    <thead><tr><th>Principal ARN</th><th>Reason</th></tr></thead>
+    <thead><tr><th>Principal</th><th>Severity</th><th>Title</th><th>Recommendation</th></tr></thead>
     <tbody>
-      <tr><td>arn:aws:iam::123456789012:role/new-feature-flag</td><td>Newly created (less than 24 hours old)</td></tr>
-      <tr><td>arn:aws:iam::123456789012:role/batch-nightly</td><td>Access Advisor API timed out after 10 minutes</td></tr>
+      <tr><td><strong>mixed-resource</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/mixed-resource</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Privilege escalation path: Create access keys for other users</td><td>Scope iam:CreateAccessKey to the principal&#x27;s own user (${aws:username}).</td></tr>
+      <tr><td><strong>passrole-runner</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/passrole-runner</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Privilege escalation path: Pass a role to a new EC2 instance</td><td>Scope iam:PassRole to specific role ARNs and add an iam:PassedToService condition.</td></tr>
+      <tr><td><strong>power-notaction</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/power-notaction</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Privilege escalation path: Overwrite Lambda function code</td><td>Scope lambda:UpdateFunctionCode to specific functions.</td></tr>
+      <tr><td><strong>power-notaction</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/power-notaction</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Privilege escalation path: Update a Glue dev endpoint</td><td>Remove glue:UpdateDevEndpoint or scope it to specific endpoints.</td></tr>
+      <tr><td><strong>power-notaction</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/power-notaction</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Privilege escalation path: Run commands through SSM</td><td>Scope ssm:SendCommand to specific instances and documents.</td></tr>
+      <tr><td><strong>power-notaction</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/power-notaction</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Privilege escalation path: Start SSM sessions</td><td>Scope ssm:StartSession to specific instances.</td></tr>
+      <tr><td><strong>power-notaction</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/power-notaction</span></td><td><span class="sev-badge sev-medium" style="background:#ffc107">Medium</span></td><td>Privilege escalation path: Assume any role</td><td>Scope sts:AssumeRole to specific role ARNs.</td></tr>
+    </tbody>
+  </table>
+</details>
+<details>
+  <summary>Credential Findings (1)</summary>
+  <table>
+    <thead><tr><th>Principal</th><th>Severity</th><th>Title</th><th>Recommendation</th></tr></thead>
+    <tbody>
+      <tr><td><strong>console-no-mfa</strong><br><span class="principal-arn">arn:aws:iam::123456789012:user/console-no-mfa</span></td><td><span class="sev-badge" style="background:#fd7e14">High</span></td><td>Console access without MFA</td><td>Require this user to enrol an MFA device, or remove the console password.</td></tr>
+    </tbody>
+  </table>
+</details>
+<details>
+  <summary>Trust Policy Findings (2)</summary>
+  <table>
+    <thead><tr><th>Principal</th><th>Severity</th><th>Title</th><th>Recommendation</th></tr></thead>
+    <tbody>
+      <tr><td><strong>gh-deploy</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/gh-deploy</span></td><td><span class="sev-badge" style="background:#dc3545">Critical</span></td><td>Trust policy: Any GitHub repository can assume this role</td><td>Add a StringEquals/StringLike condition on token.actions.githubusercontent.com:sub limiting it to your repository and branch, e.g. repo:my-org/my-repo:ref:refs/heads/main.</td></tr>
+      <tr><td><strong>trust-anyone</strong><br><span class="principal-arn">arn:aws:iam::123456789012:role/trust-anyone</span></td><td><span class="sev-badge" style="background:#dc3545">Critical</span></td><td>Trust policy: Any AWS account can assume this role</td><td>Replace &#x27;*&#x27; with specific account or role ARNs, or add a condition such as aws:PrincipalOrgID to restrict callers to your organization.</td></tr>
     </tbody>
   </table>
 </details>

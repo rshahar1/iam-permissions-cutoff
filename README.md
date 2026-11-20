@@ -133,55 +133,49 @@ iam-audit report --format text --output audit.txt
 
 ## Output Formats
 
+> The examples below come from a fictional account (placeholder ID `123456789012`) seeded into the local
+> [moto](https://github.com/getmoto/moto) emulator used by the [smoke test](#local-emulator-smoke-test).
+> moto does not implement Access Advisor, so the last-accessed data behind the *Unused Permission* findings
+> is simulated; every finding is real output of the analyzers. The complete sample reports are in
+> [`examples/`](examples/).
+
 ### Text
 
-Human-readable table output grouped by finding category with severity indicators.
+Human-readable output grouped by finding category, with color-coded severities and a recommendation for
+every finding. Excerpt (first findings of each category):
 
-```
-IAM Audit Report — Account: 123456789012
-Timestamp : 2026-03-10T14:32:00Z
-Threshold : 90 days
-Principals scanned: 87
+![iam-audit text report: findings grouped by category with severities and recommendations](docs/images/report-text.svg)
 
-DORMANCY FINDINGS (3)
-─────────────────────────────────────────────────────────
-  CRITICAL  arn:aws:iam::123456789012:role/old-deploy-role
-            Last activity: never
-            Recommendation: Delete this unused role
-
-  HIGH      arn:aws:iam::123456789012:user/ci-legacy
-            Last activity: 2025-08-12
-            Recommendation: Delete this dormant user
-
-PERMISSION FINDINGS (2)
-─────────────────────────────────────────────────────────
-  CRITICAL  arn:aws:iam::123456789012:role/admin-role
-            Policy: inline/AdminPolicy — Action:*, Resource:*
-            Recommendation: Scope actions and resources to minimum required
-```
+Full sample: [`examples/report.txt`](examples/report.txt)
 
 ### JSON
 
-Machine-readable output following a versioned schema (`schema_version: "1.0.0"`). Findings are sorted by severity descending, then by principal name. See [specs/003-iam-audit-cli/contracts/json-schema.md](specs/003-iam-audit-cli/contracts/json-schema.md) for the full schema reference.
+Machine-readable output following a versioned schema (`schema_version: "1.0.0"`). Findings are sorted by severity descending, then by principal name. See [specs/003-iam-audit-cli/contracts/json-schema.md](specs/003-iam-audit-cli/contracts/json-schema.md) for the full schema reference, and the `contracts/json-schema-delta.md` file of each later feature in [`specs/`](specs/) for the categories added since.
 
 ```json
 {
   "schema_version": "1.0.0",
   "account_id": "123456789012",
-  "audit_timestamp": "2026-03-10T14:32:00Z",
+  "audit_timestamp": "2026-11-20T16:51:40.637163Z",
   "threshold_days": 90,
   "include_aws_managed": false,
   "filters": { "path_prefix": null, "name_pattern": null, "tags": null },
   "summary": {
-    "total_findings": 5,
-    "principals_scanned": 87,
-    "by_severity": { "critical": 2, "high": 2, "medium": 1, "low": 0 },
-    "by_category": { "dormancy": 3, "permission": 2 }
+    "total_findings": 22,
+    "principals_scanned": 11,
+    "data_gaps_count": 0,
+    "by_category": {
+      "permission": 8, "unused_permission": 4, "privilege_escalation": 7,
+      "credential": 1, "trust_policy": 2
+    },
+    "by_severity": { "critical": 4, "high": 12, "medium": 5, "low": 1 }
   },
   "findings": [ "..." ],
   "data_gaps": []
 }
 ```
+
+Full sample: [`examples/report.json`](examples/report.json)
 
 ### HTML
 
@@ -192,6 +186,11 @@ Self-contained static HTML file with:
 - Print-friendly — `@media print` forces all sections expanded
 - No JavaScript — works in any browser, safe to share as a standalone file
 - All dynamic content escaped via `html.escape()` to prevent XSS
+
+[![iam-audit HTML report: summary badges and the permission findings table](docs/images/report-html-overview.png)](docs/images/report-html-full.png)
+
+*Click the screenshot for the full report with every section expanded.* Full sample:
+[`examples/report.html`](examples/report.html) (download and open it in a browser).
 
 ## Exit Codes
 

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "account_id": "123456789012",
-  "audit_timestamp": "2026-03-10T14:32:00Z",
+  "audit_timestamp": "2026-11-20T16:51:40.637163Z",
   "threshold_days": 90,
   "include_aws_managed": false,
   "filters": {
@@ -10,307 +10,481 @@
     "tags": null
   },
   "summary": {
-    "total_findings": 15,
-    "principals_scanned": 87,
-    "data_gaps_count": 2,
+    "total_findings": 22,
+    "principals_scanned": 11,
+    "data_gaps_count": 0,
     "by_category": {
-      "permission": 6,
-      "dormancy": 5,
-      "unused_permission": 4
+      "permission": 8,
+      "trust_policy": 2,
+      "credential": 1,
+      "unused_permission": 4,
+      "privilege_escalation": 7
     },
     "by_severity": {
       "critical": 4,
-      "high": 5,
-      "medium": 4,
-      "low": 2
+      "high": 12,
+      "medium": 5,
+      "low": 1
     }
   },
   "findings": [
     {
-      "principal_arn": "arn:aws:iam::123456789012:role/admin-emergency",
-      "principal_name": "admin-emergency",
+      "principal_arn": "arn:aws:iam::123456789012:role/ci-admin",
+      "principal_name": "ci-admin",
       "principal_type": "role",
       "category": "permission",
       "severity": "critical",
-      "title": "Full administrator access: Action:* Resource:*",
-      "description": "Inline policy EmergencyAccess grants unrestricted access to all AWS services and resources.",
-      "recommendation": "Scope actions and resources to the minimum required. Replace with service-specific policies.",
-      "metadata": {
-        "policy_name": "EmergencyAccess",
-        "policy_type": "inline",
-        "actions": [
-          "*"
-        ],
-        "resources": [
-          "*"
-        ],
-        "has_deny_statements": false
-      }
-    },
-    {
-      "principal_arn": "arn:aws:iam::123456789012:user/dev-lead",
-      "principal_name": "dev-lead",
-      "principal_type": "user",
-      "category": "permission",
-      "severity": "critical",
-      "title": "Full administrator access: Action:* Resource:*",
-      "description": "Managed policy AdministratorAccess grants unrestricted access. Note: this principal also has Deny statements that may restrict effective permissions.",
-      "recommendation": "Replace AdministratorAccess with scoped policies for the required services.",
+      "title": "Overly permissive policy: AdministratorAccess",
+      "description": "",
+      "recommendation": "Remove this policy or replace with least-privilege permissions. Action '*' and Resource '*' grants full access. This is an AWS-managed policy and cannot be edited: detach it and attach a customer-managed least-privilege policy instead.",
       "metadata": {
         "policy_name": "AdministratorAccess",
         "policy_type": "managed",
+        "policy_is_aws_managed": true,
+        "statement_sid": null,
         "actions": [
           "*"
         ],
         "resources": [
           "*"
         ],
-        "has_deny_statements": true
-      }
-    },
-    {
-      "principal_arn": "arn:aws:iam::123456789012:user/intern-2024",
-      "principal_name": "intern-2024",
-      "principal_type": "user",
-      "category": "dormancy",
-      "severity": "critical",
-      "title": "User has never logged in",
-      "description": "User account was created 9 months ago, no console or API activity recorded.",
-      "recommendation": "Delete this unused user account.",
-      "metadata": {
-        "last_activity": null,
-        "days_inactive": null,
-        "has_password": true
-      }
-    },
-    {
-      "principal_arn": "arn:aws:iam::123456789012:role/legacy-deploy-role",
-      "principal_name": "legacy-deploy-role",
-      "principal_type": "role",
-      "category": "dormancy",
-      "severity": "critical",
-      "title": "Role has never been assumed",
-      "description": "Role was created 14 months ago and has never been used.",
-      "recommendation": "Delete this unused role \u2014 it serves no purpose and increases attack surface.",
-      "metadata": {
-        "last_activity": null,
-        "days_inactive": null,
-        "has_password": false
-      }
-    },
-    {
-      "principal_arn": "arn:aws:iam::123456789012:role/backend-api",
-      "principal_name": "backend-api",
-      "principal_type": "role",
-      "category": "permission",
-      "severity": "high",
-      "title": "Full-service wildcard: s3:*",
-      "description": "Inline policy S3FullAccess grants all S3 actions on all buckets.",
-      "recommendation": "Restrict to specific S3 buckets and actions (e.g., s3:GetObject, s3:PutObject on the application bucket).",
-      "metadata": {
-        "policy_name": "S3FullAccess",
-        "policy_type": "inline",
-        "actions": [
-          "s3:*"
-        ],
-        "resources": [
-          "*"
-        ],
+        "not_actions": [],
+        "not_resources": [],
         "has_deny_statements": false
       }
     },
     {
-      "principal_arn": "arn:aws:iam::123456789012:role/ci-deploy",
-      "principal_name": "ci-deploy",
+      "principal_arn": "arn:aws:iam::123456789012:role/gh-deploy",
+      "principal_name": "gh-deploy",
+      "principal_type": "role",
+      "category": "trust_policy",
+      "severity": "critical",
+      "title": "Trust policy: Any GitHub repository can assume this role",
+      "description": "The role trusts GitHub Actions OIDC without constraining the token.actions.githubusercontent.com:sub claim (or every value is a wildcard), so workflows in any GitHub repository can assume it.",
+      "recommendation": "Add a StringEquals/StringLike condition on token.actions.githubusercontent.com:sub limiting it to your repository and branch, e.g. repo:my-org/my-repo:ref:refs/heads/main.",
+      "metadata": {
+        "rule_id": "TRUST-005",
+        "statement_sid": null,
+        "principal": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com",
+        "condition_keys": [
+          "token.actions.githubusercontent.com:aud"
+        ]
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/mixed-star",
+      "principal_name": "mixed-star",
+      "principal_type": "role",
+      "category": "permission",
+      "severity": "critical",
+      "title": "Overly permissive policy: mixed-star-inline",
+      "description": "",
+      "recommendation": "Remove this policy or replace with least-privilege permissions. Action '*' and Resource '*' grants full access.",
+      "metadata": {
+        "policy_name": "mixed-star-inline",
+        "policy_type": "inline",
+        "policy_is_aws_managed": false,
+        "statement_sid": null,
+        "actions": [
+          "*",
+          "s3:GetObject"
+        ],
+        "resources": [
+          "*"
+        ],
+        "not_actions": [],
+        "not_resources": [],
+        "has_deny_statements": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/trust-anyone",
+      "principal_name": "trust-anyone",
+      "principal_type": "role",
+      "category": "trust_policy",
+      "severity": "critical",
+      "title": "Trust policy: Any AWS account can assume this role",
+      "description": "The trust policy allows the AWS principal '*' without a condition on the caller's organization, account or ARN, so any principal in any AWS account can assume the role.",
+      "recommendation": "Replace '*' with specific account or role ARNs, or add a condition such as aws:PrincipalOrgID to restrict callers to your organization.",
+      "metadata": {
+        "rule_id": "TRUST-001",
+        "statement_sid": null,
+        "principal": "*",
+        "condition_keys": []
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/bucket-star",
+      "principal_name": "bucket-star",
+      "principal_type": "role",
+      "category": "permission",
+      "severity": "high",
+      "title": "Overly permissive policy: bucket-star-inline",
+      "description": "",
+      "recommendation": "Restrict permissions: use specific actions instead of service wildcards (e.g. s3:*), and scope resources to specific ARNs where possible.",
+      "metadata": {
+        "policy_name": "bucket-star-inline",
+        "policy_type": "inline",
+        "policy_is_aws_managed": false,
+        "statement_sid": null,
+        "actions": [
+          "*"
+        ],
+        "resources": [
+          "arn:aws:s3:::data-bucket/*"
+        ],
+        "not_actions": [],
+        "not_resources": [],
+        "has_deny_statements": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:user/console-no-mfa",
+      "principal_name": "console-no-mfa",
+      "principal_type": "user",
+      "category": "credential",
+      "severity": "high",
+      "title": "Console access without MFA",
+      "description": "The user has a console password but no MFA device, so a stolen or guessed password is enough to sign in.",
+      "recommendation": "Require this user to enrol an MFA device, or remove the console password.",
+      "metadata": {
+        "rule_id": "CRED-004",
+        "password_enabled": true,
+        "mfa_active": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/mixed-resource",
+      "principal_name": "mixed-resource",
       "principal_type": "role",
       "category": "unused_permission",
       "severity": "high",
-      "title": "Unused IAM service permissions",
-      "description": "Granted iam:CreateRole, iam:DeleteRole, iam:AttachRolePolicy but none used in 90 days.",
-      "recommendation": "Remove unused IAM actions: iam:CreateRole, iam:DeleteRole, iam:AttachRolePolicy. Keep: iam:PassRole.",
+      "title": "Unused iam permissions: CreateAccessKey, PassRole",
+      "description": "Principal has 2 unused permission(s) for iam. Only actions tracked by AWS Access Advisor are assessed.",
+      "recommendation": "Remove unused iam permissions from policies.",
       "metadata": {
         "service_namespace": "iam",
+        "granularity": "ACTION_LEVEL",
+        "last_accessed": null,
         "unused_actions": [
-          "CreateRole",
-          "DeleteRole",
-          "AttachRolePolicy"
-        ],
-        "keep_actions": [
+          "CreateAccessKey",
           "PassRole"
         ],
-        "granularity": "ACTION_LEVEL"
+        "keep_actions": []
       }
     },
     {
-      "principal_arn": "arn:aws:iam::123456789012:role/ci-jenkins-old",
-      "principal_name": "ci-jenkins-old",
+      "principal_arn": "arn:aws:iam::123456789012:role/mixed-resource",
+      "principal_name": "mixed-resource",
       "principal_type": "role",
-      "category": "dormancy",
+      "category": "privilege_escalation",
       "severity": "high",
-      "title": "Role unused for 245 days",
-      "description": "Last assumed on 2025-07-10.",
-      "recommendation": "Delete this dormant role or investigate if it is still needed.",
+      "title": "Privilege escalation path: Create access keys for other users",
+      "description": "Can mint credentials for another, more privileged user.",
+      "recommendation": "Scope iam:CreateAccessKey to the principal's own user (${aws:username}).",
       "metadata": {
-        "last_activity": "2025-07-10T08:23:00Z",
-        "days_inactive": 245,
-        "has_password": false
+        "rule_id": "PE-011",
+        "rule_name": "Create access keys for other users",
+        "matched_actions": [
+          "iam:CreateAccessKey"
+        ],
+        "granting_policies": [
+          "mixed-resource-inline"
+        ]
       }
     },
     {
-      "principal_arn": "arn:aws:iam::123456789012:role/lambda-processor",
-      "principal_name": "lambda-processor",
+      "principal_arn": "arn:aws:iam::123456789012:role/passrole-runner",
+      "principal_name": "passrole-runner",
+      "principal_type": "role",
+      "category": "privilege_escalation",
+      "severity": "high",
+      "title": "Privilege escalation path: Pass a role to a new EC2 instance",
+      "description": "Can launch an instance with a privileged instance profile and read its credentials.",
+      "recommendation": "Scope iam:PassRole to specific role ARNs and add an iam:PassedToService condition.",
+      "metadata": {
+        "rule_id": "PE-014",
+        "rule_name": "Pass a role to a new EC2 instance",
+        "matched_actions": [
+          "iam:PassRole",
+          "ec2:RunInstances"
+        ],
+        "granting_policies": [
+          "passrole-runner-inline"
+        ]
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/power-notaction",
+      "principal_name": "power-notaction",
       "principal_type": "role",
       "category": "permission",
       "severity": "high",
-      "title": "Full-service wildcard: dynamodb:*",
-      "description": "Managed policy AmazonDynamoDBFullAccess grants all DynamoDB actions.",
-      "recommendation": "Restrict to specific tables and actions (e.g., dynamodb:GetItem, dynamodb:PutItem).",
+      "title": "Overly permissive policy: power-notaction-inline",
+      "description": "",
+      "recommendation": "Replace NotAction with an explicit allow-list of the actions this principal needs: NotAction grants every action not listed, including future AWS actions.",
       "metadata": {
-        "policy_name": "AmazonDynamoDBFullAccess",
-        "policy_type": "managed",
-        "actions": [
-          "dynamodb:*"
-        ],
+        "policy_name": "power-notaction-inline",
+        "policy_type": "inline",
+        "policy_is_aws_managed": false,
+        "statement_sid": null,
+        "actions": [],
         "resources": [
           "*"
         ],
+        "not_actions": [
+          "iam:*"
+        ],
+        "not_resources": [],
         "has_deny_statements": false
       }
     },
     {
-      "principal_arn": "arn:aws:iam::123456789012:user/svc-monitoring",
-      "principal_name": "svc-monitoring",
-      "principal_type": "user",
-      "category": "dormancy",
+      "principal_arn": "arn:aws:iam::123456789012:role/power-notaction",
+      "principal_name": "power-notaction",
+      "principal_type": "role",
+      "category": "unused_permission",
       "severity": "high",
-      "title": "User inactive for 180 days",
-      "description": "Last API key usage on 2025-09-12.",
-      "recommendation": "Disable access keys and delete this user if no longer needed.",
+      "title": "Unused kms permissions",
+      "description": "Principal has service unused permission(s) for kms.",
+      "recommendation": "Remove unused kms permissions from policies.",
       "metadata": {
-        "last_activity": "2025-09-12T14:05:00Z",
-        "days_inactive": 180,
-        "has_password": false
+        "service_namespace": "kms",
+        "granularity": "SERVICE_LEVEL",
+        "last_accessed": "2026-04-24T16:51:39.092750+00:00",
+        "unused_actions": null,
+        "keep_actions": null
       }
     },
     {
-      "principal_arn": "arn:aws:iam::123456789012:role/backend-api",
-      "principal_name": "backend-api",
+      "principal_arn": "arn:aws:iam::123456789012:role/power-notaction",
+      "principal_name": "power-notaction",
       "principal_type": "role",
       "category": "unused_permission",
+      "severity": "high",
+      "title": "Unused secretsmanager permissions",
+      "description": "Principal has service unused permission(s) for secretsmanager.",
+      "recommendation": "Remove unused secretsmanager permissions from policies.",
+      "metadata": {
+        "service_namespace": "secretsmanager",
+        "granularity": "SERVICE_LEVEL",
+        "last_accessed": null,
+        "unused_actions": null,
+        "keep_actions": null
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/power-notaction",
+      "principal_name": "power-notaction",
+      "principal_type": "role",
+      "category": "privilege_escalation",
+      "severity": "high",
+      "title": "Privilege escalation path: Overwrite Lambda function code",
+      "description": "Can replace the code of an existing function and run as its role.",
+      "recommendation": "Scope lambda:UpdateFunctionCode to specific functions.",
+      "metadata": {
+        "rule_id": "PE-016",
+        "rule_name": "Overwrite Lambda function code",
+        "matched_actions": [
+          "lambda:UpdateFunctionCode"
+        ],
+        "granting_policies": [
+          "power-notaction-inline"
+        ]
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/power-notaction",
+      "principal_name": "power-notaction",
+      "principal_type": "role",
+      "category": "privilege_escalation",
+      "severity": "high",
+      "title": "Privilege escalation path: Update a Glue dev endpoint",
+      "description": "Can add an SSH key to an existing dev endpoint and use its role.",
+      "recommendation": "Remove glue:UpdateDevEndpoint or scope it to specific endpoints.",
+      "metadata": {
+        "rule_id": "PE-021",
+        "rule_name": "Update a Glue dev endpoint",
+        "matched_actions": [
+          "glue:UpdateDevEndpoint"
+        ],
+        "granting_policies": [
+          "power-notaction-inline"
+        ]
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/power-notaction",
+      "principal_name": "power-notaction",
+      "principal_type": "role",
+      "category": "privilege_escalation",
+      "severity": "high",
+      "title": "Privilege escalation path: Run commands through SSM",
+      "description": "Can run commands on managed instances and use their instance roles.",
+      "recommendation": "Scope ssm:SendCommand to specific instances and documents.",
+      "metadata": {
+        "rule_id": "PE-022",
+        "rule_name": "Run commands through SSM",
+        "matched_actions": [
+          "ssm:SendCommand"
+        ],
+        "granting_policies": [
+          "power-notaction-inline"
+        ]
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/power-notaction",
+      "principal_name": "power-notaction",
+      "principal_type": "role",
+      "category": "privilege_escalation",
+      "severity": "high",
+      "title": "Privilege escalation path: Start SSM sessions",
+      "description": "Can open a shell on managed instances and use their instance roles.",
+      "recommendation": "Scope ssm:StartSession to specific instances.",
+      "metadata": {
+        "rule_id": "PE-023",
+        "rule_name": "Start SSM sessions",
+        "matched_actions": [
+          "ssm:StartSession"
+        ],
+        "granting_policies": [
+          "power-notaction-inline"
+        ]
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:user/deploy-bot",
+      "principal_name": "deploy-bot",
+      "principal_type": "user",
+      "category": "permission",
       "severity": "medium",
-      "title": "Unused S3 actions detected",
-      "description": "Granted s3:* but only s3:GetObject and s3:ListBucket were used in 90 days.",
-      "recommendation": "Replace s3:* with specific actions: s3:GetObject, s3:ListBucket.",
+      "title": "Overly permissive policy: deployers-read",
+      "description": "",
+      "recommendation": "Review and narrow permissions: prefer specific actions over wildcards and restrict resources to required ARNs.",
+      "metadata": {
+        "policy_name": "deployers-read",
+        "policy_type": "group",
+        "policy_is_aws_managed": false,
+        "statement_sid": null,
+        "actions": [
+          "s3:Get*"
+        ],
+        "resources": [
+          "arn:aws:s3:::artifacts/*"
+        ],
+        "not_actions": [],
+        "not_resources": [],
+        "has_deny_statements": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:user/deploy-bot",
+      "principal_name": "deploy-bot",
+      "principal_type": "user",
+      "category": "unused_permission",
+      "severity": "medium",
+      "title": "Unused s3 permissions: GetBucketPolicy, GetBucketTagging, GetBucketVersioning",
+      "description": "Principal has 3 unused permission(s) for s3. Only actions tracked by AWS Access Advisor are assessed.",
+      "recommendation": "Remove unused s3 permissions from policies.",
       "metadata": {
         "service_namespace": "s3",
+        "granularity": "ACTION_LEVEL",
+        "last_accessed": "2026-11-16T16:51:39.092750+00:00",
         "unused_actions": [
-          "PutObject",
-          "DeleteObject",
-          "PutBucketPolicy",
-          "GetBucketAcl"
+          "GetBucketPolicy",
+          "GetBucketTagging",
+          "GetBucketVersioning"
         ],
         "keep_actions": [
-          "GetObject",
-          "ListBucket"
-        ],
-        "granularity": "ACTION_LEVEL"
+          "GetBucketAcl"
+        ]
       }
     },
     {
-      "principal_arn": "arn:aws:iam::123456789012:role/data-pipeline-staging",
-      "principal_name": "data-pipeline-staging",
-      "principal_type": "role",
-      "category": "dormancy",
-      "severity": "medium",
-      "title": "Role unused for 95 days",
-      "description": "Last assumed on 2025-12-06. Slightly exceeds the 90-day dormancy threshold.",
-      "recommendation": "Verify if the staging pipeline is still active; delete if decommissioned.",
-      "metadata": {
-        "last_activity": "2025-12-06T10:00:00Z",
-        "days_inactive": 95,
-        "has_password": false
-      }
-    },
-    {
-      "principal_arn": "arn:aws:iam::123456789012:role/ecs-task-role",
-      "principal_name": "ecs-task-role",
+      "principal_arn": "arn:aws:iam::123456789012:role/mixed-resource",
+      "principal_name": "mixed-resource",
       "principal_type": "role",
       "category": "permission",
       "severity": "medium",
-      "title": "Wildcard resource with specific actions",
-      "description": "Policy ECSTaskAccess grants 8 EC2 actions on Resource:*.",
-      "recommendation": "Restrict resource ARNs to the specific VPC, subnets, or instances required.",
+      "title": "Overly permissive policy: mixed-resource-inline",
+      "description": "",
+      "recommendation": "Review and narrow permissions: prefer specific actions over wildcards and restrict resources to required ARNs.",
       "metadata": {
-        "policy_name": "ECSTaskAccess",
+        "policy_name": "mixed-resource-inline",
         "policy_type": "inline",
+        "policy_is_aws_managed": false,
+        "statement_sid": null,
         "actions": [
-          "ec2:DescribeInstances",
-          "ec2:DescribeSubnets"
+          "iam:PassRole",
+          "iam:CreateAccessKey"
+        ],
+        "resources": [
+          "arn:aws:iam::123456789012:role/app",
+          "*"
+        ],
+        "not_actions": [],
+        "not_resources": [],
+        "has_deny_statements": false
+      }
+    },
+    {
+      "principal_arn": "arn:aws:iam::123456789012:role/passrole-runner",
+      "principal_name": "passrole-runner",
+      "principal_type": "role",
+      "category": "permission",
+      "severity": "medium",
+      "title": "Overly permissive policy: passrole-runner-inline",
+      "description": "",
+      "recommendation": "Review and narrow permissions: prefer specific actions over wildcards and restrict resources to required ARNs.",
+      "metadata": {
+        "policy_name": "passrole-runner-inline",
+        "policy_type": "inline",
+        "policy_is_aws_managed": false,
+        "statement_sid": null,
+        "actions": [
+          "iam:PassRole",
+          "ec2:RunInstances"
         ],
         "resources": [
           "*"
         ],
+        "not_actions": [],
+        "not_resources": [],
         "has_deny_statements": false
       }
     },
     {
-      "principal_arn": "arn:aws:iam::123456789012:role/lambda-processor",
-      "principal_name": "lambda-processor",
+      "principal_arn": "arn:aws:iam::123456789012:role/power-notaction",
+      "principal_name": "power-notaction",
       "principal_type": "role",
-      "category": "unused_permission",
+      "category": "privilege_escalation",
       "severity": "medium",
-      "title": "Unused CloudWatch Logs permissions",
-      "description": "Service logs.amazonaws.com was never accessed in 90 days.",
-      "recommendation": "Remove CloudWatch Logs access if this Lambda does not write logs through this role.",
+      "title": "Privilege escalation path: Assume any role",
+      "description": "Can assume any role whose trust policy trusts this account.",
+      "recommendation": "Scope sts:AssumeRole to specific role ARNs.",
       "metadata": {
-        "service_namespace": "logs",
-        "unused_actions": null,
-        "keep_actions": null,
-        "granularity": "SERVICE_LEVEL"
+        "rule_id": "PE-024",
+        "rule_name": "Assume any role",
+        "matched_actions": [
+          "sts:AssumeRole"
+        ],
+        "granting_policies": [
+          "power-notaction-inline"
+        ]
       }
     },
     {
-      "principal_arn": "arn:aws:iam::123456789012:role/orphan-role",
-      "principal_name": "orphan-role",
-      "principal_type": "role",
+      "principal_arn": "arn:aws:iam::123456789012:user/console-no-mfa",
+      "principal_name": "console-no-mfa",
+      "principal_type": "user",
       "category": "permission",
       "severity": "low",
-      "title": "Role has zero attached or inline policies",
-      "description": "This role has no policies and serves no functional purpose.",
-      "recommendation": "Review and attach a policy or delete this entity.",
-      "metadata": {
-        "policy_name": null,
-        "policy_type": null,
-        "actions": [],
-        "resources": [],
-        "has_deny_statements": false
-      }
-    },
-    {
-      "principal_arn": "arn:aws:iam::123456789012:user/readonly-analyst",
-      "principal_name": "readonly-analyst",
-      "principal_type": "user",
-      "category": "unused_permission",
-      "severity": "low",
-      "title": "Unused read-only Redshift access",
-      "description": "Granted redshift:Describe* but Redshift was never accessed in 90 days.",
-      "recommendation": "Remove Redshift read access if no longer needed for analytics.",
-      "metadata": {
-        "service_namespace": "redshift",
-        "unused_actions": null,
-        "keep_actions": null,
-        "granularity": "SERVICE_LEVEL"
-      }
+      "title": "Principal has no policies attached",
+      "description": "",
+      "recommendation": "Attach appropriate policies or add inline policies if this principal should have access.",
+      "metadata": {}
     }
   ],
-  "data_gaps": [
-    {
-      "principal_arn": "arn:aws:iam::123456789012:role/new-feature-flag",
-      "reason": "Newly created (less than 24 hours old)"
-    },
-    {
-      "principal_arn": "arn:aws:iam::123456789012:role/batch-nightly",
-      "reason": "Access Advisor API timed out after 10 minutes"
-    }
-  ]
+  "data_gaps": []
 }
