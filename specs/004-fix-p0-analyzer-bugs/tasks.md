@@ -68,6 +68,8 @@
 - [x] T021 Run `ruff check` and `pytest --cov`; confirm no violations and coverage >= 80%
 - [ ] T022 Re-run against a sample account (or fixtures) to confirm reserved-role noise is gone and AWS-managed policy findings remain — pending: needs a live AWS account run by the maintainer
 - [x] T023 Verify constitution limits (functions <= 40 lines, files <= 400 lines) on touched files
+- [x] T024 Add GitHub Actions CI (`.github/workflows/ci.yml`): ruff + pytest with coverage on Python 3.12/3.13, mypy (non-blocking until the 30 pre-existing errors are fixed), and blocking `pip-audit`; actions pinned to commit SHAs, read-only token
+- [x] T025 Bump `pytest` to `>=9.0.3,<10.0.0` in `requirements-dev.txt` to resolve PYSEC-2026-1845 flagged by `pip-audit`
 
 ---
 
