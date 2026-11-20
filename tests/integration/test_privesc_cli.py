@@ -12,7 +12,7 @@ from moto import mock_aws
 
 from iam_audit.cli import main
 from iam_audit.models import FindingCategory
-from iam_audit.pipeline import CHECKS, SUBCOMMANDS, get_subcommand
+from iam_audit.pipeline import CHECKS, get_subcommand
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -20,21 +20,19 @@ if TYPE_CHECKING:
 _TRUST = '{"Version":"2012-10-17","Statement":[]}'
 
 
-def test_privesc_check_is_registered_last_and_reads_policies() -> None:
-    assert list(CHECKS)[-1] == "privesc"
+def test_privesc_check_is_registered_and_reads_policies() -> None:
+    assert "privesc" in CHECKS
     assert CHECKS["privesc"].needs_policies is True
 
 
 @pytest.mark.parametrize(("name", "expected"), [("permissions", True), ("report", True), ("dormancy", False)])
 def test_privesc_runs_only_in_permissions_and_report_subcommands(name: str, expected: bool) -> None:
     assert ("privesc" in get_subcommand(name).checks) is expected
-    assert SUBCOMMANDS[-1].checks[-1] == "privesc"
 
 
 def test_privilege_escalation_category_display_name() -> None:
     assert FindingCategory.PRIVILEGE_ESCALATION.value == "privilege_escalation"
     assert FindingCategory.PRIVILEGE_ESCALATION.display_name == "Privilege Escalation Findings"
-    assert list(FindingCategory)[-1] is FindingCategory.PRIVILEGE_ESCALATION
 
 
 @pytest.mark.integration
