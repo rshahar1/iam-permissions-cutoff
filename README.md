@@ -321,7 +321,7 @@ mypy src
 python scripts/emulator_smoke.py [--keep-reports DIR]
 ```
 
-Starts a local [moto](https://github.com/getmoto/moto) IAM emulator, seeds one principal per known scenario, runs the real `iam-audit` CLI against it (default and `--include-aws-managed`) and fails (exit 1) if the findings differ from the expectations table in the script. It needs no AWS account or credentials and never contacts AWS: the environment is scrubbed of all `AWS_*` variables and pinned to the local emulator. Limits: moto does not emulate Access Advisor, so unused-permission checks are not covered, and freshly created principals must produce no dormancy findings (grace period), which the script asserts.
+Starts a local [moto](https://github.com/getmoto/moto) IAM emulator, seeds one principal per known scenario, runs the real `iam-audit` CLI against it (default and `--include-aws-managed`) and fails (exit 1) if the findings differ from the expectations table in the script. It needs no AWS account or credentials and never contacts AWS: the environment is scrubbed of all `AWS_*` variables and pinned to the local emulator. Limits: moto does not emulate Access Advisor, so unused-permission checks are not covered, and freshly created principals must produce no dormancy findings (grace period), which the script asserts. It also seeds a permissive-trust role, a GitHub OIDC role without a `sub` condition, a PassRole+RunInstances role and a console user without MFA, and asserts that the trust-policy (TRUST-001, TRUST-005), privilege-escalation (PE-014) and credential-report (CRED-004) rules fire for them and stay silent for clean principals.
 
 ### Security audit
 

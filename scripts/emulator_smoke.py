@@ -6,8 +6,9 @@ Usage:
 The script starts an in-process moto server on 127.0.0.1, seeds one IAM principal
 per known scenario, runs ``python -m iam_audit report --format json`` twice
 (default and ``--include-aws-managed``) and compares the findings against the
-``EXPECTED_PERMISSION`` table below. To add a scenario, seed it in ``seed()`` and
-add a row to the table.
+``EXPECTED_PERMISSION`` table below, plus the trust-policy, privilege-escalation and
+credential-report rules in ``EXPECTED_RULES`` / ``EXPECTED_ABSENT``. To add a scenario,
+seed it in ``seed()`` and add a row to a table.
 
 Exit codes: 0 = all checks pass, 1 = expectation mismatch, 2 = setup error.
 
@@ -63,8 +64,27 @@ EXPECTED_PERMISSION: dict[str, dict[str, Any]] = {
     "deploy-bot": {"severity": "medium"},
     "tight-reader": {"severity": None},
 }
-DEFAULT_SCANNED = 7
-MANAGED_SCANNED = 9
+DEFAULT_SCANNED = 11
+MANAGED_SCANNED = 13
+
+# Default-run rule findings: (principal, category, metadata["rule_id"]).
+EXPECTED_RULES: list[tuple[str, str, str]] = [
+    ("trust-anyone", "trust_policy", "TRUST-001"),
+    ("gh-deploy", "trust_policy", "TRUST-005"),
+    ("passrole-runner", "privilege_escalation", "PE-014"),
+    ("console-no-mfa", "credential", "CRED-004"),
+]
+# Default-run expected absences: (principal, category) must have no finding.
+EXPECTED_ABSENT: list[tuple[str, str]] = [
+    ("tight-reader", "trust_policy"),
+    ("tight-reader", "privilege_escalation"),
+    ("ci-admin", "privilege_escalation"),  # full-admin principals are skipped by design
+    ("deploy-bot", "credential"),  # no console password
+]
+# Only these principals may have trust_policy findings (others use EC2 service trust).
+TRUST_FLAGGED = {"trust-anyone", "gh-deploy"}
+GH_OIDC = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+TEST_PASSWORD = "Smoke-Test-Only-1!"  # fake; only ever sent to the local emulator
 
 
 class SetupError(Exception):
@@ -101,9 +121,9 @@ def doc(*statements: dict[str, Any]) -> str:
 
 
 def make_role(iam: Any, name: str, path: str = "/", inline: str | None = None,
-              managed: list[str] | None = None) -> None:
-    """Create a role with an optional inline policy and managed attachments."""
-    iam.create_role(RoleName=name, Path=path, AssumeRolePolicyDocument=TRUST)
+              managed: list[str] | None = None, trust: str = TRUST) -> None:
+    """Create a role with an optional trust policy, inline policy and managed attachments."""
+    iam.create_role(RoleName=name, Path=path, AssumeRolePolicyDocument=trust)
     if inline:
         iam.put_role_policy(RoleName=name, PolicyName=f"{name}-inline", PolicyDocument=inline)
     for arn in managed or []:
@@ -130,6 +150,25 @@ def seed_roles(iam: Any) -> None:
     make_role(iam, SERVICE_ROLE, path="/aws-service-role/ecs.amazonaws.com/")
 
 
+def seed_new_checks(iam: Any) -> None:
+    """Seed principals for the trust-policy, privilege-escalation and credential checks."""
+    scoped = doc({"Effect": "Allow", "Action": "s3:GetObject",
+                  "Resource": "arn:aws:s3:::data-bucket/*"})
+    make_role(iam, "trust-anyone", inline=scoped, trust=doc(
+        {"Effect": "Allow", "Principal": {"AWS": "*"}, "Action": "sts:AssumeRole"}))
+    make_role(iam, "gh-deploy", inline=scoped, trust=doc({
+        "Effect": "Allow", "Principal": {"Federated": GH_OIDC},
+        "Action": "sts:AssumeRoleWithWebIdentity",
+        "Condition": {"StringEquals": {"token.actions.githubusercontent.com:aud":
+                                       "sts.amazonaws.com"}},
+    }))
+    make_role(iam, "passrole-runner", inline=doc(
+        {"Effect": "Allow", "Action": ["iam:PassRole", "ec2:RunInstances"], "Resource": "*"}))
+    iam.create_user(UserName="console-no-mfa")
+    iam.create_login_profile(UserName="console-no-mfa", Password=TEST_PASSWORD,
+                             PasswordResetRequired=False)
+
+
 def seed_users(iam: Any) -> None:
     """Seed a user whose group has a customer-managed partial-wildcard policy."""
     arn = iam.create_policy(
@@ -151,6 +190,7 @@ def seed(endpoint: str) -> None:
     )
     seed_roles(iam)
     seed_users(iam)
+    seed_new_checks(iam)
 
 
 def run_cli(env: dict[str, str], out: Path, extra: list[str]) -> dict[str, Any]:
@@ -195,6 +235,24 @@ def check_permission(name: str, spec: dict[str, Any],
     return results
 
 
+def check_rules(findings: list[dict[str, Any]]) -> list[tuple[str, bool]]:
+    """Evaluate EXPECTED_RULES, EXPECTED_ABSENT and the trust-policy allow-list."""
+    results = []
+    for name, category, rule_id in EXPECTED_RULES:
+        hit = any(f["principal_name"] == name and f["category"] == category
+                  and f.get("metadata", {}).get("rule_id") == rule_id for f in findings)
+        results.append((f"{name}: {category} finding {rule_id} present", hit))
+    for name, category in EXPECTED_ABSENT:
+        count = sum(1 for f in findings
+                    if f["principal_name"] == name and f["category"] == category)
+        results.append((f"{name}: no {category} findings (got {count})", count == 0))
+    stray = sorted({f["principal_name"] for f in findings
+                    if f["category"] == "trust_policy"} - TRUST_FLAGGED)
+    results.append((f"default: trust_policy findings only for {sorted(TRUST_FLAGGED)} "
+                    f"(unexpected: {stray})", not stray))
+    return results
+
+
 def check_scope(default: dict[str, Any], managed: dict[str, Any]) -> list[tuple[str, bool]]:
     """Evaluate principal counts and AWS-managed inclusion behaviour."""
     names = {f["principal_name"] for f in default["findings"]}
@@ -219,6 +277,7 @@ def check_scope(default: dict[str, Any], managed: dict[str, Any]) -> list[tuple[
 def evaluate(default: dict[str, Any], managed: dict[str, Any]) -> list[tuple[str, bool]]:
     """Run every check and return (description, passed) pairs."""
     results = check_scope(default, managed)
+    results.extend(check_rules(default["findings"]))
     for name, spec in EXPECTED_PERMISSION.items():
         results.extend(check_permission(name, spec, default["findings"]))
     return results
