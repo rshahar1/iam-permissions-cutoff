@@ -8,4 +8,4 @@
 - [x] T006 Add `tests/unit/test_privesc_rules.py` and `tests/integration/test_privesc_cli.py`
 - [x] T007 Write the JSON contract delta
 - [x] T008 Run ruff, mypy (strict), pytest and the emulator smoke test
-- [ ] T009 Verify CI passes on the pull request
+- [x] T009 Verify CI passes on the pull request — all 5 checks green on PR #6 (54ae6bb, rebased onto 008), 2026-11-20
